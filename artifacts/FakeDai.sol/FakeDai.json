@@ -437,9 +437,9 @@
           "parameterSlots": 0,
           "returnSlots": 0
         },
-        "@_6715": {
+        "@_6678": {
           "entryPoint": null,
-          "id": 6715,
+          "id": 6678,
           "parameterSlots": 2,
           "returnSlots": 0
         },
@@ -2939,69 +2939,69 @@
     },
     "deployedBytecode": {
       "functionDebugData": {
-        "@_approve_7069": {
+        "@_approve_7032": {
           "entryPoint": 696,
-          "id": 7069,
+          "id": 7032,
           "parameterSlots": 3,
           "returnSlots": 0
         },
-        "@_approve_7129": {
+        "@_approve_7092": {
           "entryPoint": 988,
-          "id": 7129,
+          "id": 7092,
           "parameterSlots": 4,
           "returnSlots": 0
         },
-        "@_mint_7018": {
+        "@_mint_6981": {
           "entryPoint": 936,
-          "id": 7018,
+          "id": 6981,
           "parameterSlots": 2,
           "returnSlots": 0
         },
-        "@_msgSender_9152": {
+        "@_msgSender_9115": {
           "entryPoint": null,
-          "id": 9152,
+          "id": 9115,
           "parameterSlots": 0,
           "returnSlots": 1
         },
-        "@_spendAllowance_7177": {
+        "@_spendAllowance_7140": {
           "entryPoint": 714,
-          "id": 7177,
+          "id": 7140,
           "parameterSlots": 3,
           "returnSlots": 0
         },
-        "@_transfer_6908": {
+        "@_transfer_6871": {
           "entryPoint": 843,
-          "id": 6908,
+          "id": 6871,
           "parameterSlots": 3,
           "returnSlots": 0
         },
-        "@_update_6985": {
+        "@_update_6948": {
           "entryPoint": 1198,
-          "id": 6985,
+          "id": 6948,
           "parameterSlots": 3,
           "returnSlots": 0
         },
-        "@allowance_6805": {
+        "@allowance_6768": {
           "entryPoint": null,
-          "id": 6805,
+          "id": 6768,
           "parameterSlots": 2,
           "returnSlots": 1
         },
-        "@approve_6829": {
+        "@approve_6792": {
           "entryPoint": 594,
-          "id": 6829,
+          "id": 6792,
           "parameterSlots": 2,
           "returnSlots": 1
         },
-        "@balanceOf_6764": {
+        "@balanceOf_6727": {
           "entryPoint": null,
-          "id": 6764,
+          "id": 6727,
           "parameterSlots": 1,
           "returnSlots": 1
         },
-        "@decimals_6742": {
+        "@decimals_6705": {
           "entryPoint": null,
-          "id": 6742,
+          "id": 6705,
           "parameterSlots": 0,
           "returnSlots": 1
         },
@@ -3011,33 +3011,33 @@
           "parameterSlots": 2,
           "returnSlots": 0
         },
-        "@name_6724": {
+        "@name_6687": {
           "entryPoint": 450,
-          "id": 6724,
+          "id": 6687,
           "parameterSlots": 0,
           "returnSlots": 1
         },
-        "@symbol_6733": {
+        "@symbol_6696": {
           "entryPoint": 668,
-          "id": 6733,
+          "id": 6696,
           "parameterSlots": 0,
           "returnSlots": 1
         },
-        "@totalSupply_6751": {
+        "@totalSupply_6714": {
           "entryPoint": null,
-          "id": 6751,
+          "id": 6714,
           "parameterSlots": 0,
           "returnSlots": 1
         },
-        "@transferFrom_6861": {
+        "@transferFrom_6824": {
           "entryPoint": 619,
-          "id": 6861,
+          "id": 6824,
           "parameterSlots": 3,
           "returnSlots": 1
         },
-        "@transfer_6788": {
+        "@transfer_6751": {
           "entryPoint": 683,
-          "id": 6788,
+          "id": 6751,
           "parameterSlots": 2,
           "returnSlots": 1
         },
@@ -16972,7 +16972,7 @@
   "storageLayout": {
     "storage": [
       {
-        "astId": 6686,
+        "astId": 6649,
         "contract": "FakeDai.sol:FakeDai",
         "label": "_balances",
         "offset": 0,
@@ -16980,7 +16980,7 @@
         "type": "t_mapping(t_address,t_uint256)"
       },
       {
-        "astId": 6692,
+        "astId": 6655,
         "contract": "FakeDai.sol:FakeDai",
         "label": "_allowances",
         "offset": 0,
@@ -16988,7 +16988,7 @@
         "type": "t_mapping(t_address,t_mapping(t_address,t_uint256))"
       },
       {
-        "astId": 6694,
+        "astId": 6657,
         "contract": "FakeDai.sol:FakeDai",
         "label": "_totalSupply",
         "offset": 0,
@@ -16996,7 +16996,7 @@
         "type": "t_uint256"
       },
       {
-        "astId": 6696,
+        "astId": 6659,
         "contract": "FakeDai.sol:FakeDai",
         "label": "_name",
         "offset": 0,
@@ -17004,7 +17004,7 @@
         "type": "t_string_storage"
       },
       {
-        "astId": 6698,
+        "astId": 6661,
         "contract": "FakeDai.sol:FakeDai",
         "label": "_symbol",
         "offset": 0,

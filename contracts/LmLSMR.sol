@@ -337,18 +337,27 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     require(_outcome < numOutcomes, "Invalid outcome index");
     require(_amount > 0, "Amount must be positive");
     require(CT.payoutDenominator(condition) == 0, "Market already resolved");
+
+    // Re-calculating liquidity parameter by subtracting out the amount of shares sold
     require(q[_outcome] >= _amount, "Not enough shares to sell");
-
-    // Calculate refund using cost_after_buy with negative amount
-    int128 new_cost = cost_after_buy(_outcome, -_amount);
-    refund = current_cost - new_cost;
-    current_cost = new_cost;
-
-    // Update state
     q[_outcome] = ABDKMath.sub(q[_outcome], _amount);
     total_shares = ABDKMath.sub(total_shares, _amount);
     b = ABDKMath.mul(total_shares, alpha);
 
+    // Calculating the cost of the new state after selling shares with new liquidity parameter C(q', q')
+    int128 sum_total;
+    for (uint i = 0; i < numOutcomes; i++) {
+        sum_total = ABDKMath.add(sum_total, ABDKMath.exp(ABDKMath.div(q[i], b)));
+    }
+    int128 new_cost = ABDKMath.mul(b, ABDKMath.ln(sum_total));
+
+    // Calculating the refund amount by the difference between Cost = C(q',q') - C(q,q)
+    refund = ABDKMath.sub(current_cost, new_cost);
+    
+    // Re-setting the C(q',q') the updated state to the old state in preparation for the next operation
+    current_cost = new_cost;
+
+    // getTokenWei converts the selling collateral into the smallest unit of the token
     uint n_outcome_tokens = getTokenWei(token, _amount);
     uint pos = CT.getPositionId(IERC20(token), CT.getCollectionId(bytes32(0), condition, 1 << _outcome));
     CT.safeTransferFrom(msg.sender, address(this), pos, n_outcome_tokens, "");
@@ -357,7 +366,7 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     IERC20(token).safeTransfer(msg.sender, token_refund);
 
     return refund;
-}
+  }
 
   function getLiquidityParameter() public view returns (int128) {
     return b;
