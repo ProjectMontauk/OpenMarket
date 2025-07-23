@@ -103,45 +103,35 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     current_cost = cost();
   }
 
-  /**
-   * @notice This function is used to buy outcome tokens.
-   * @param _outcome The outcome(s) which a user is buying tokens for.
-      Note: This is the integer representation for the bit array.
-   * @param _amount This is the number of outcome tokens purchased
-   * @return _price The cost to purchase _amount number of tokens
-   */
-  function buy(uint256 _outcome, int128 _amount) public onlyAfterInit returns (int128 _price) {
-    require(_outcome < numOutcomes, "Invalid outcome index");
-    require(_amount > 0, "Amount must be positive");
-    require(CT.payoutDenominator(condition) == 0, 'Market already resolved');
-
-    // 1. Calculate new cost and price using a temporary inventory
-    int128[] memory new_q = new int128[](numOutcomes);
-    for (uint i = 0; i < numOutcomes; i++) {
-        new_q[i] = q[i];
+  function _calculateBuyPrice(
+    int128[] memory q_,
+    uint256 _outcome,
+    int128 _amount,
+    int128 total_shares_,
+    int128 alpha_,
+    int128 current_cost_,
+    uint numOutcomes_
+  ) internal pure returns (int128 new_cost, int128 price_, int128 new_total_shares, int128 new_b) {
+    int128[] memory new_q = new int128[](numOutcomes_);
+    for (uint i = 0; i < numOutcomes_; i++) {
+        new_q[i] = q_[i];
     }
     new_q[_outcome] = ABDKMath.add(new_q[_outcome], _amount);
-    int128 new_total_shares = ABDKMath.add(total_shares, _amount);
-    int128 new_b = ABDKMath.mul(new_total_shares, alpha);
+    new_total_shares = ABDKMath.add(total_shares_, _amount);
+    new_b = ABDKMath.mul(new_total_shares, alpha_);
 
     int128 sum_total;
-    for (uint i = 0; i < numOutcomes; i++) {
+    for (uint i = 0; i < numOutcomes_; i++) {
         sum_total = ABDKMath.add(sum_total, ABDKMath.exp(ABDKMath.div(new_q[i], new_b)));
     }
-    int128 new_cost = ABDKMath.mul(new_b, ABDKMath.ln(sum_total));
-    _price = ABDKMath.sub(new_cost, current_cost);
+    new_cost = ABDKMath.mul(new_b, ABDKMath.ln(sum_total));
+    price_ = ABDKMath.sub(new_cost, current_cost_);
+  }
 
-    // 2. Collect tokens from user
-    uint token_cost = getTokenWeiUp(token, _price);
-    require(IERC20(token).transferFrom(msg.sender, address(this), token_cost), 'Error transferring tokens');
-
-    // 3. Now update the actual inventory and state
-    q[_outcome] = ABDKMath.add(q[_outcome], _amount);
-    total_shares = ABDKMath.add(total_shares, _amount);
-    b = ABDKMath.mul(total_shares, alpha);
-    current_cost = new_cost;
-
-    // 4. Mint outcome tokens and transfer to user
+  function _mintAndTransferOutcomeTokens(
+    uint256 _outcome,
+    int128 _amount
+  ) internal {
     uint n_outcome_tokens = getTokenWeiUp(token, _amount);
     uint pos = CT.getPositionId(IERC20(token),
         CT.getCollectionId(bytes32(0), condition, 1 << _outcome));
@@ -152,7 +142,32 @@ contract LsLMSR is IERC1155Receiver, Ownable{
             getPositionAndDustPositions(_outcome), n_outcome_tokens);
     }
     CT.safeTransferFrom(address(this), msg.sender, pos, n_outcome_tokens, '');
-}
+  }
+
+  function buy(
+    uint256 _outcome,
+    int128 _amount
+  ) public onlyAfterInit returns (int128 _price) {
+    require(_outcome < numOutcomes, "Invalid outcome index");
+    require(_amount > 0, "Amount must be positive");
+    require(CT.payoutDenominator(condition) == 0, 'Market already resolved');
+
+
+    (int128 new_cost, int128 price_, int128 new_total_shares, int128 new_b) = _calculateBuyPrice(q, _outcome, _amount, total_shares, alpha, current_cost, numOutcomes);
+
+    uint token_cost = getTokenWeiUp(token, price_);
+    require(IERC20(token).transferFrom(msg.sender, address(this), token_cost), 'Error transferring tokens');
+
+    // Now update the actual inventory and state
+    q[_outcome] = ABDKMath.add(q[_outcome], _amount);
+    total_shares = new_total_shares;
+    b = new_b;
+    current_cost = new_cost;
+
+    _mintAndTransferOutcomeTokens(_outcome, _amount);
+
+    return price_;
+  }
 
   // getPositionAndDustPositions(1 << _outcome), n_outcome_tokens);
 
