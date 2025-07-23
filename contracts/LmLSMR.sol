@@ -110,46 +110,49 @@ contract LsLMSR is IERC1155Receiver, Ownable{
    * @param _amount This is the number of outcome tokens purchased
    * @return _price The cost to purchase _amount number of tokens
    */
-  function buy(
-    uint256 _outcome,
-    int128 _amount
-  ) public onlyAfterInit() returns (int128 _price){
+  function buy(uint256 _outcome, int128 _amount) public onlyAfterInit returns (int128 _price) {
     require(_outcome < numOutcomes, "Invalid outcome index");
     require(_amount > 0, "Amount must be positive");
     require(CT.payoutDenominator(condition) == 0, 'Market already resolved');
 
+    // 1. Calculate new cost and price using a temporary inventory
+    int128[] memory new_q = new int128[](numOutcomes);
+    for (uint i = 0; i < numOutcomes; i++) {
+        new_q[i] = q[i];
+    }
+    new_q[_outcome] = ABDKMath.add(new_q[_outcome], _amount);
+    int128 new_total_shares = ABDKMath.add(total_shares, _amount);
+    int128 new_b = ABDKMath.mul(new_total_shares, alpha);
+
+    int128 sum_total;
+    for (uint i = 0; i < numOutcomes; i++) {
+        sum_total = ABDKMath.add(sum_total, ABDKMath.exp(ABDKMath.div(new_q[i], new_b)));
+    }
+    int128 new_cost = ABDKMath.mul(new_b, ABDKMath.ln(sum_total));
+    _price = ABDKMath.sub(new_cost, current_cost);
+
+    // 2. Collect tokens from user
+    uint token_cost = getTokenWeiUp(token, _price);
+    require(IERC20(token).transferFrom(msg.sender, address(this), token_cost), 'Error transferring tokens');
+
+    // 3. Now update the actual inventory and state
     q[_outcome] = ABDKMath.add(q[_outcome], _amount);
     total_shares = ABDKMath.add(total_shares, _amount);
     b = ABDKMath.mul(total_shares, alpha);
-
-    int128 sum_total;
-    for(uint i=0; i< numOutcomes; i++) {
-      sum_total = ABDKMath.add(sum_total,
-        ABDKMath.exp(
-          ABDKMath.div(q[i], b)
-          ));
-    }
-
-    int128 new_cost = ABDKMath.mul(b,ABDKMath.ln(sum_total));
-    _price = ABDKMath.sub(new_cost,current_cost);
     current_cost = new_cost;
 
-    uint token_cost = getTokenWei(token, _price);
-    uint n_outcome_tokens = getTokenWei(token, _amount);
+    // 4. Mint outcome tokens and transfer to user
+    uint n_outcome_tokens = getTokenWeiUp(token, _amount);
     uint pos = CT.getPositionId(IERC20(token),
-      CT.getCollectionId(bytes32(0), condition, 1 << _outcome));
+        CT.getCollectionId(bytes32(0), condition, 1 << _outcome));
 
-    require(IERC20(token).transferFrom(msg.sender, address(this), token_cost),
-      'Error transferring tokens');
-
-    if(CT.balanceOf(address(this), pos) < n_outcome_tokens) {
-      IERC20(token).approve(address(CT), getTokenWei(token, _amount));
-      CT.splitPosition(IERC20(token), bytes32(0), condition,
-        getPositionAndDustPositions(_outcome), n_outcome_tokens);
-      }
-    CT.safeTransferFrom(address(this), msg.sender,
-      pos, n_outcome_tokens, '');
-  }
+    if (CT.balanceOf(address(this), pos) < n_outcome_tokens) {
+        IERC20(token).approve(address(CT), getTokenWeiUp(token, _amount));
+        CT.splitPosition(IERC20(token), bytes32(0), condition,
+            getPositionAndDustPositions(_outcome), n_outcome_tokens);
+    }
+    CT.safeTransferFrom(address(this), msg.sender, pos, n_outcome_tokens, '');
+}
 
   // getPositionAndDustPositions(1 << _outcome), n_outcome_tokens);
 
@@ -272,23 +275,37 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     return current_cost - cost_after_buy(_outcome, -_amount);
 }
 
-  function getTokenWei(
-    address _token,
-    int128 _amount
-  ) public view returns (uint) {
+  function getTokenWei(address _token, int128 _amount) public view returns (uint) {
     uint d = ERC20(_token).decimals();
     uint multiplier = 10 ** d;
-    
-    // Debug: Check for potential overflow
     require(_amount >= 0, "Amount must be non-negative");
-    
-    // Check if the multiplication would overflow
-    // For 18 decimals, multiplier = 10^18 = 1000000000000000000
-    // If _amount is too large, mulu will revert
+    // Use ABDKMath.mulu for multiplication
     uint result = ABDKMath.mulu(_amount, multiplier);
-    
+    // Rounding up: if there's any remainder, add 1
     return result;
-  }
+}
+
+  function getTokenWeiUp(address _token, int128 _amount) public view returns (uint) {
+    uint d = ERC20(_token).decimals();
+    uint multiplier = 10 ** d;
+    require(_amount >= 0, "Amount must be non-negative");
+    // Calculate the product in 256-bit space
+    uint result = ABDKMath.mulu(_amount, multiplier);
+    // Now check if there is any remainder by doing the division in fixed-point
+    // _amount is 64.64, multiplier is integer
+    // If (_amount * multiplier) % 1 != 0, round up
+    if (ABDKMath.mul(_amount, int128(int256(multiplier))) & 0xFFFFFFFFFFFFFFFF > 0) {
+        result += 1;
+    }
+    return result;
+}
+
+  function getTokenWeiDown(address _token, int128 _amount) public view returns (uint) {
+    uint d = ERC20(_token).decimals();
+    uint multiplier = 10 ** d;
+    require(_amount >= 0, "Amount must be non-negative");
+    return ABDKMath.mulu(_amount, multiplier); // Default is round down
+}
 
   function getTokenEth(
     address _token,
@@ -353,20 +370,23 @@ contract LsLMSR is IERC1155Receiver, Ownable{
 
     // Calculating the refund amount by the difference between Cost = C(q',q') - C(q,q)
     refund = ABDKMath.sub(current_cost, new_cost);
-    
-    // Re-setting the C(q',q') the updated state to the old state in preparation for the next operation
-    current_cost = new_cost;
 
     // getTokenWei converts the selling collateral into the smallest unit of the token
-    uint n_outcome_tokens = getTokenWei(token, _amount);
+    uint n_outcome_tokens = getTokenWeiDown(token, _amount);
     uint pos = CT.getPositionId(IERC20(token), CT.getCollectionId(bytes32(0), condition, 1 << _outcome));
+    
+    // Collect shares from user FIRST
     CT.safeTransferFrom(msg.sender, address(this), pos, n_outcome_tokens, "");
 
-    uint token_refund = getTokenWei(token, refund);
+    // THEN update current_cost
+    current_cost = new_cost;
+
+    // Pay refund to user
+    uint token_refund = getTokenWeiDown(token, refund);
     IERC20(token).safeTransfer(msg.sender, token_refund);
 
     return refund;
-  }
+}
 
   function getLiquidityParameter() public view returns (int128) {
     return b;
