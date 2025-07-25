@@ -27,7 +27,6 @@ contract LsLMSR is IERC1155Receiver, Ownable{
   uint public numOutcomes;
   int128[] private q;
   int128 private b;
-  int128 private alpha;
   int128 private current_cost;
   int128 private total_shares;
   int128 public initial_subsidy;
@@ -94,9 +93,8 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     int128 n = ABDKMath.fromUInt(_numOutcomes);
     initial_subsidy = getTokenEth(token, _subsidy);
 
-    overround = ABDKMath.divu(_overround, 10000);
-    alpha = ABDKMath.div(overround, ABDKMath.mul(n, ABDKMath.ln(n)));
-    b = ABDKMath.mul(ABDKMath.mul(initial_subsidy, n), alpha);
+    b = ABDKMath.fromUInt(1); // No overround
+    b = ABDKMath.mul(initial_subsidy, n); // b = initial_subsidy * n
 
     for(uint i=0; i<_numOutcomes; i++) {
       q.push(initial_subsidy);
@@ -113,23 +111,23 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     uint256 _outcome,
     int128 _amount,
     int128 total_shares_,
-    int128 alpha_,
     int128 current_cost_,
     uint numOutcomes_
-  ) internal pure returns (int128 new_cost, int128 price_, int128 new_total_shares, int128 new_b) {
+  ) internal view returns (int128 new_cost, int128 price_, int128 new_total_shares) {
     int128[] memory new_q = new int128[](numOutcomes_);
     for (uint i = 0; i < numOutcomes_; i++) {
         new_q[i] = q_[i];
     }
     new_q[_outcome] = ABDKMath.add(new_q[_outcome], _amount);
     new_total_shares = ABDKMath.add(total_shares_, _amount);
-    new_b = ABDKMath.mul(new_total_shares, alpha_);
+    // Use the contract's b (fixed) instead of recalculating
+    int128 used_b = b;
 
     int128 sum_total;
     for (uint i = 0; i < numOutcomes_; i++) {
-        sum_total = ABDKMath.add(sum_total, ABDKMath.exp(ABDKMath.div(new_q[i], new_b)));
+        sum_total = ABDKMath.add(sum_total, ABDKMath.exp(ABDKMath.div(new_q[i], used_b)));
     }
-    new_cost = ABDKMath.mul(new_b, ABDKMath.ln(sum_total));
+    new_cost = ABDKMath.mul(used_b, ABDKMath.ln(sum_total));
     price_ = ABDKMath.sub(new_cost, current_cost_);
   }
 
@@ -157,7 +155,7 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     require(_amount > 0, "Amount must be positive");
     require(CT.payoutDenominator(condition) == 0, 'Market already resolved');
 
-    (int128 new_cost, int128 price_, int128 new_total_shares, int128 new_b) = _calculateBuyPrice(q, _outcome, _amount, total_shares, alpha, current_cost, numOutcomes);
+    (int128 new_cost, int128 price_, int128 new_total_shares) = _calculateBuyPrice(q, _outcome, _amount, total_shares, current_cost, numOutcomes);
 
     // Apply overround as a multiplier to the buy price
     int128 overround_multiplier = ABDKMath.add(ABDKMath.fromUInt(1), overround); // 1 + overround
@@ -174,7 +172,6 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     // Now update the actual inventory and state
     q[_outcome] = ABDKMath.add(q[_outcome], _amount);
     total_shares = new_total_shares;
-    b = new_b;
     current_cost = new_cost;
 
     _mintAndTransferOutcomeTokens(_outcome, _amount);
@@ -256,7 +253,7 @@ contract LsLMSR is IERC1155Receiver, Ownable{
       }
     }
 
-    int128 _b = ABDKMath.mul(TB, alpha);
+    int128 _b = TB;
 
     for(uint i=0; i< numOutcomes; i++) {
       sum_total = ABDKMath.add(sum_total,
@@ -383,23 +380,23 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     uint256 _outcome,
     int128 _amount,
     int128 total_shares_,
-    int128 alpha_,
     int128 current_cost_,
     uint numOutcomes_
-) internal pure returns (int128 new_cost, int128 refund_, int128 new_total_shares, int128 new_b) {
+) internal view returns (int128 new_cost, int128 refund_, int128 new_total_shares) {
     int128[] memory new_q = new int128[](numOutcomes_);
     for (uint i = 0; i < numOutcomes_; i++) {
         new_q[i] = q_[i];
     }
     new_q[_outcome] = ABDKMath.sub(new_q[_outcome], _amount);
     new_total_shares = ABDKMath.sub(total_shares_, _amount);
-    new_b = ABDKMath.mul(new_total_shares, alpha_);
+    // Use the contract's b (fixed) instead of recalculating
+    int128 used_b = b;
 
     int128 sum_total;
     for (uint i = 0; i < numOutcomes_; i++) {
-        sum_total = ABDKMath.add(sum_total, ABDKMath.exp(ABDKMath.div(new_q[i], new_b)));
+        sum_total = ABDKMath.add(sum_total, ABDKMath.exp(ABDKMath.div(new_q[i], used_b)));
     }
-    new_cost = ABDKMath.mul(new_b, ABDKMath.ln(sum_total));
+    new_cost = ABDKMath.mul(used_b, ABDKMath.ln(sum_total));
     refund_ = ABDKMath.sub(current_cost_, new_cost);
 }
 
@@ -410,8 +407,8 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     require(q[_outcome] >= _amount, "Not enough shares to sell");
 
     // 1. Calculate refund BEFORE updating state
-    (int128 new_cost, int128 refund_, int128 new_total_shares, int128 new_b) = _calculateSellRefund(
-        q, _outcome, _amount, total_shares, alpha, current_cost, numOutcomes
+    (int128 new_cost, int128 refund_, int128 new_total_shares) = _calculateSellRefund(
+        q, _outcome, _amount, total_shares, current_cost, numOutcomes
     );
 
     // 2. Collect shares from user
@@ -426,7 +423,6 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     // 4. Update the inventory and state
     q[_outcome] = ABDKMath.sub(q[_outcome], _amount);
     total_shares = new_total_shares;
-    b = new_b;
     current_cost = new_cost;
 
     // 5. Pay refund to user
@@ -463,7 +459,7 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     total_shares = ABDKMath.add(total_shares, ABDKMath.mul(subsidy, ABDKMath.fromUInt(numOutcomes)));
 
     // 5. Recalculate b
-    b = ABDKMath.mul(total_shares, alpha);
+    b = ABDKMath.mul(total_shares, ABDKMath.fromUInt(1)); // No overround
 
     // 6. Update current_cost
     current_cost = cost();
