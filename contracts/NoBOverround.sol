@@ -47,6 +47,11 @@ contract LsLMSR is IERC1155Receiver, Ownable{
   event BuyTokenCost(uint256 tokenCost, int128 price_);
   event DebugBalanceBefore(uint256 balance);
   event DebugBalanceAfter(uint256 balance);
+  event SplitPositionError(string context, string reason);
+  event DebugCollateralization(uint256 userPayment, uint256 outcomeTokens, uint256 contractBalance, uint256 requiredCollateral);
+  event DebugMergePositions(uint256 outcomeTokens, uint256 balanceBefore, uint256 balanceAfter, int128 refund);
+  event DebugSellAttempt(uint256 userBalance, uint256 requestedAmount, uint256 outcomeTokens, int128 refund);
+  event DebugMinting(uint256 outcome, uint256 contractBalance, uint256 neededTokens, bool willMint);
 
   /**
    * @notice Constructor function for the market maker
@@ -69,9 +74,8 @@ contract LsLMSR is IERC1155Receiver, Ownable{
       oracle for this condition
    * @param _questionId The question ID (needs to be unique)
    * @param _numOutcomes The number of different outcomes available
-   * _subsidyToken Which ERC-20 token will be used to purchase and redeem
-      outcome tokens for this condition
-   * @param _subsidy How much initial funding is used to seed the market maker.
+   * @param bInput The liquidity parameter b for the LMSR market maker
+   * @param _initialSubsidy The initial DAI subsidy to deposit in the contract
    * @param _overround How much 'profit' does the AMM claim? Note that this is
    * represented in bips. Therefore inputting 300 represents 0.30%
    */
@@ -79,7 +83,8 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     address _oracle,
     bytes32 _questionId,
     uint _numOutcomes,
-    uint _subsidy,
+    uint bInput,
+    uint _initialSubsidy,
     uint _overround
   ) public onlyOwner() {
     require(init == false,'Already init');
@@ -87,17 +92,16 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     CT.prepareCondition(_oracle, _questionId, _numOutcomes);
     condition = CT.getConditionId(_oracle, _questionId, _numOutcomes);
 
-    IERC20(token).safeTransferFrom(msg.sender, address(this), _subsidy);
-
     numOutcomes = _numOutcomes;
     int128 n = ABDKMath.fromUInt(_numOutcomes);
-    initial_subsidy = getTokenEth(token, _subsidy);
+    int128 initial_b = getTokenEth(token, bInput);
+    b = initial_b;
 
-    b = ABDKMath.fromUInt(1); // No overround
-    b = ABDKMath.mul(initial_subsidy, n); // b = initial_subsidy * n
+    // Transfer the initial subsidy to the contract
+    IERC20(token).safeTransferFrom(msg.sender, address(this), _initialSubsidy);
 
     for(uint i=0; i<_numOutcomes; i++) {
-      q.push(initial_subsidy);
+      q.push(0); // Start each outcome with zero shares
     }
 
     init = true;
@@ -140,7 +144,11 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     uint pos = CT.getPositionId(IERC20(token),
         CT.getCollectionId(bytes32(0), condition, 1 << _outcome));
 
-    if (CT.balanceOf(address(this), pos) < n_outcome_tokens) {
+    uint contractBalance = CT.balanceOf(address(this), pos);
+    bool willMint = contractBalance < n_outcome_tokens;
+    emit DebugMinting(_outcome, contractBalance, n_outcome_tokens, willMint);
+    
+    if (willMint) {
         IERC20(token).approve(address(CT), getTokenWeiUp(token, _amount));
         CT.splitPosition(IERC20(token), bytes32(0), condition,
             getPositionAndDustPositions(_outcome), n_outcome_tokens);
@@ -164,11 +172,7 @@ contract LsLMSR is IERC1155Receiver, Ownable{
 
     uint token_cost = getTokenWeiUp(token, price_with_overround);
     emit BuyTokenCost(token_cost, price_with_overround);
-    uint256 beforeBalance = IERC20(token).balanceOf(address(this));
-    emit DebugBalanceBefore(beforeBalance);
     require(IERC20(token).transferFrom(msg.sender, address(this), token_cost), 'Error transferring tokens');
-    uint256 afterBalance = IERC20(token).balanceOf(address(this));
-    emit DebugBalanceAfter(afterBalance);
 
     // Now update the actual inventory and state
     q[_outcome] = ABDKMath.add(q[_outcome], _amount);
@@ -243,28 +247,26 @@ contract LsLMSR is IERC1155Receiver, Ownable{
   ) public view returns (int128) {
     int128 sum_total;
     int128[] memory newq = new int128[](q.length);
-    int128 TB = total_shares;
+    // Use the contract's fixed b parameter
+    int128 used_b = b;
 
     for(uint j=0; j< numOutcomes; j++) {
       if((_outcome & (1<<j)) != 0) {
         newq[j] = ABDKMath.add(q[j], _amount);
-        TB = ABDKMath.add(TB, _amount);
       } else {
         newq[j] = q[j];
       }
     }
 
-    int128 _b = TB;
-
     for(uint i=0; i< numOutcomes; i++) {
       sum_total = ABDKMath.add(sum_total,
         ABDKMath.exp(
-          ABDKMath.div(newq[i], _b)
+          ABDKMath.div(newq[i], used_b)
           ));
     }
 
-    return ABDKMath.mul(_b, ABDKMath.ln(sum_total));
-  }
+    return ABDKMath.mul(used_b, ABDKMath.ln(sum_total));
+}
 
   /**
    *  This function tells you how much it will cost to make a particular trade.
@@ -415,11 +417,46 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     // 2. Collect shares from user
     uint n_outcome_tokens = getTokenWeiDown(token, _amount);
     uint pos = CT.getPositionId(IERC20(token), CT.getCollectionId(bytes32(0), condition, 1 << _outcome));
-    CT.safeTransferFrom(msg.sender, address(this), pos, n_outcome_tokens, "");
+    
+    try CT.safeTransferFrom(msg.sender, address(this), pos, n_outcome_tokens, "") {
+        // Success - continue
+    } catch Error(string memory reason) {
+        emit SplitPositionError("safeTransferFrom failed", reason);
+        revert(string(abi.encodePacked("safeTransferFrom failed: ", reason)));
+    }
 
-    // 3. Burn outcome tokens and get DAI back
-    CT.mergePositions(IERC20(token), bytes32(0), condition, 
-        getPositionAndDustPositions(_outcome), n_outcome_tokens);
+        // 3. Check if we have enough tokens for all outcomes in the partition
+    uint[] memory partition = getPositionAndDustPositions(_outcome);
+    bool canMerge = true;
+    
+    for (uint i = 0; i < partition.length; i++) {
+        uint posId = CT.getPositionId(IERC20(token), CT.getCollectionId(bytes32(0), condition, partition[i]));
+        uint balance = CT.balanceOf(address(this), posId);
+        if (balance < n_outcome_tokens) {
+            canMerge = false;
+            break;
+        }
+    }
+    
+    if (canMerge) {
+        // 4. Burn outcome tokens and get DAI back
+        CT.mergePositions(IERC20(token), bytes32(0), condition, partition, n_outcome_tokens);
+    } else {
+        // If we can't merge, we need to mint the missing tokens first
+        for (uint i = 0; i < partition.length; i++) {
+            uint posId = CT.getPositionId(IERC20(token), CT.getCollectionId(bytes32(0), condition, partition[i]));
+            uint balance = CT.balanceOf(address(this), posId);
+            if (balance < n_outcome_tokens) {
+                uint needed = n_outcome_tokens - balance;
+                // Mint the missing tokens by calling splitPosition
+                IERC20(token).approve(address(CT), needed);
+                CT.splitPosition(IERC20(token), bytes32(0), condition, partition, needed);
+                break; // We only need to mint once since splitPosition mints for all outcomes
+            }
+        }
+        // Now we can merge
+        CT.mergePositions(IERC20(token), bytes32(0), condition, partition, n_outcome_tokens);
+    }
 
     // 4. Update the inventory and state
     q[_outcome] = ABDKMath.sub(q[_outcome], _amount);
@@ -431,7 +468,7 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     IERC20(token).safeTransfer(msg.sender, token_refund);
 
     return refund_;
-}
+  }
 
   function getLiquidityParameter() public view returns (int128) {
     return b;
@@ -460,7 +497,7 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     total_shares = ABDKMath.add(total_shares, ABDKMath.mul(subsidy, ABDKMath.fromUInt(numOutcomes)));
 
     // 5. Recalculate b
-    b = ABDKMath.mul(total_shares, ABDKMath.fromUInt(1)); // No overround
+    // b = ABDKMath.mul(total_shares, ABDKMath.fromUInt(1)); // No overround
 
     // 6. Update current_cost
     current_cost = cost();
@@ -493,6 +530,13 @@ function withdrawFees() public onlyOwner {
 function debugFees() public view returns (uint contractBalance, uint theoreticalCost) {
     contractBalance = IERC20(token).balanceOf(address(this));
     theoreticalCost = getTokenWei(token, current_cost);
+}
+
+function getPositionInfo(uint256 _outcome) public view returns (uint256 positionId, uint256 balance) {
+    require(_outcome < numOutcomes, "Invalid outcome index");
+    bytes32 collectionId = CT.getCollectionId(bytes32(0), condition, 1 << _outcome);
+    positionId = CT.getPositionId(IERC20(token), collectionId);
+    balance = CT.balanceOf(address(this), positionId);
 }
 
 }

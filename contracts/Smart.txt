@@ -1,0 +1,75 @@
+1) Just moving tokens from LMSR back user? 
+
+User Wallet                    LMSR Contract              ConditionalTokens Contract
+     |                              |                              |
+     |                              |                              |
+     | 1. Approve LMSR to spend     |                              |
+     |    user's DAI                |                              |
+     |----------------------------->|                              |
+     |                              |                              |
+     | 2. Call buy() with DAI       |                              |
+     |----------------------------->|                              |
+     |                              |                              |
+     |                              | 3. Transfer DAI from user    |
+     |                              |    to LMSR                   |
+     |                              |                              |
+     |                              | 4. Check if LMSR has enough  |
+     |                              |    outcome tokens             |
+     |                              |    (CT.balanceOf > needed)   |
+     |                              |                              |
+     |                              | 5. Transfer existing tokens  |
+     |                              |    from LMSR to user         |
+     |                              |------------------------------>|
+     |                              |                              |
+     | 6. Receive outcome tokens    |                              |
+     |<-----------------------------|                              |
+     |                              |         
+
+
+
+
+     
+     
+     
+     2) Minting New Tokens
+     Wallet                         LMSR Contract                   ConditionalInfo
+     |                              |                              |
+     |                              |                              |
+     | 1. Approve LMSR to spend     |                              |
+     |    user's DAI                |                              |
+     |----------------------------->|                              |
+     |                              |                              |
+     | 2. Call buy() with DAI       |                              |
+     |------------------------------>|                              |
+     |                              |                              |
+     |                              | 3. Transfer DAI from user    |
+     |                              |    to LMSR                   |
+     |                              |                              |
+     |                              | 4. Check if LMSR has enough  |
+     |                              |    outcome tokens             |
+     |                              |    (CT.balanceOf < needed)   |
+     |                              |                              |
+     |                              | 5. Approve ConditionalTokens |
+     |                              |    to spend LMSR's DAI        |
+     |                              |------------------------------>|
+     |                              |                              |
+     |                              | 6. Call splitPosition()      |
+     |                              |------------------------------>|
+     |                              |                              |
+     |                              |                              | 7. Transfer DAI collateral
+     |                              |                              |    from LMSR to ConditionalTokens
+     |                              |<-----------------------------|
+     |                              |                              |
+     |                              |                              | 8. Mint outcome tokens
+     |                              |                              |    for ALL outcomes in partition
+     |                              |                              |    to LMSR contract
+     |                              |<-----------------------------|
+     |                              |                              |
+     |                              | 9. Transfer outcome tokens   |
+     |                              |    from LMSR to user         |
+     |                              |------------------------------>|
+     |                              |                              |
+     | 10. Receive outcome tokens   |                              |
+     |<-----------------------------|                              |
+     |                              | 
+
