@@ -414,8 +414,12 @@ contract LsLMSR is IERC1155Receiver, Ownable{
         q, _outcome, _amount, total_shares, current_cost, numOutcomes
     );
 
-    // 2. Collect shares from user
+    // 2. Check if user is trying to sell more than possible
+    uint maxSellable = getMaxSellableAmount(_outcome);
     uint n_outcome_tokens = getTokenWeiDown(token, _amount);
+    require(n_outcome_tokens <= maxSellable, string(abi.encodePacked("Max sellable: ", maxSellable, " tokens")));
+    
+    // 3. Collect shares from user
     uint pos = CT.getPositionId(IERC20(token), CT.getCollectionId(bytes32(0), condition, 1 << _outcome));
     
     try CT.safeTransferFrom(msg.sender, address(this), pos, n_outcome_tokens, "") {
@@ -425,38 +429,30 @@ contract LsLMSR is IERC1155Receiver, Ownable{
         revert(string(abi.encodePacked("safeTransferFrom failed: ", reason)));
     }
 
-        // 3. Check if we have enough tokens for all outcomes in the partition
+    // 4. Check if we need to mint missing tokens before burning
     uint[] memory partition = getPositionAndDustPositions(_outcome);
-    bool canMerge = true;
+    bool needToMint = false;
+    uint tokensToMint = 0;
     
+    // Check if we have enough tokens for all outcomes in the partition
     for (uint i = 0; i < partition.length; i++) {
         uint posId = CT.getPositionId(IERC20(token), CT.getCollectionId(bytes32(0), condition, partition[i]));
         uint balance = CT.balanceOf(address(this), posId);
         if (balance < n_outcome_tokens) {
-            canMerge = false;
-            break;
+            needToMint = true;
+            tokensToMint = n_outcome_tokens - balance;
+            break; // We only need to mint once since splitPosition mints for all outcomes
         }
     }
     
-    if (canMerge) {
-        // 4. Burn outcome tokens and get DAI back
-        CT.mergePositions(IERC20(token), bytes32(0), condition, partition, n_outcome_tokens);
-    } else {
-        // If we can't merge, we need to mint the missing tokens first
-        for (uint i = 0; i < partition.length; i++) {
-            uint posId = CT.getPositionId(IERC20(token), CT.getCollectionId(bytes32(0), condition, partition[i]));
-            uint balance = CT.balanceOf(address(this), posId);
-            if (balance < n_outcome_tokens) {
-                uint needed = n_outcome_tokens - balance;
-                // Mint the missing tokens by calling splitPosition
-                IERC20(token).approve(address(CT), needed);
-                CT.splitPosition(IERC20(token), bytes32(0), condition, partition, needed);
-                break; // We only need to mint once since splitPosition mints for all outcomes
-            }
-        }
-        // Now we can merge
-        CT.mergePositions(IERC20(token), bytes32(0), condition, partition, n_outcome_tokens);
+    // Mint missing tokens if needed
+    if (needToMint) {
+        IERC20(token).approve(address(CT), tokensToMint);
+        CT.splitPosition(IERC20(token), bytes32(0), condition, partition, tokensToMint);
     }
+    
+    // 5. Burn outcome tokens and get DAI back
+    CT.mergePositions(IERC20(token), bytes32(0), condition, partition, n_outcome_tokens);
 
     // 4. Update the inventory and state
     q[_outcome] = ABDKMath.sub(q[_outcome], _amount);
@@ -537,6 +533,24 @@ function getPositionInfo(uint256 _outcome) public view returns (uint256 position
     bytes32 collectionId = CT.getCollectionId(bytes32(0), condition, 1 << _outcome);
     positionId = CT.getPositionId(IERC20(token), collectionId);
     balance = CT.balanceOf(address(this), positionId);
+}
+
+function getMaxSellableAmount(uint256 _outcome) public view returns (uint256) {
+    require(_outcome < numOutcomes, "Invalid outcome index");
+    
+    // Get partner outcome (the other outcome)
+    uint256 partnerOutcome = _outcome == 0 ? 1 : 0;
+    
+    // Get contract balance
+    uint256 contractBalance = IERC20(token).balanceOf(address(this));
+    
+    // Get existing partner outcome tokens
+    uint256 partnerPosId = CT.getPositionId(IERC20(token), 
+        CT.getCollectionId(bytes32(0), condition, 1 << partnerOutcome));
+    uint256 existingPartnerTokens = CT.balanceOf(address(this), partnerPosId);
+    
+    // Max sellable = contract balance + existing partner tokens
+    return contractBalance + existingPartnerTokens;
 }
 
 }
