@@ -149,9 +149,11 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     emit DebugMinting(_outcome, contractBalance, n_outcome_tokens, willMint);
     
     if (willMint) {
-        IERC20(token).approve(address(CT), getTokenWeiUp(token, _amount));
+        // Only mint the difference between what we need and what we have
+        uint tokensToMint = n_outcome_tokens - contractBalance;
+        IERC20(token).approve(address(CT), tokensToMint);
         CT.splitPosition(IERC20(token), bytes32(0), condition,
-            getPositionAndDustPositions(_outcome), n_outcome_tokens);
+            getPositionAndDustPositions(_outcome), tokensToMint);
     }
     CT.safeTransferFrom(address(this), msg.sender, pos, n_outcome_tokens, '');
   }
@@ -409,59 +411,39 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     require(CT.payoutDenominator(condition) == 0, "Market already resolved");
     require(q[_outcome] >= _amount, "Not enough shares to sell");
 
-    // 1. Calculate refund BEFORE updating state
+    // Calculate refund
     (int128 new_cost, int128 refund_, int128 new_total_shares) = _calculateSellRefund(
         q, _outcome, _amount, total_shares, current_cost, numOutcomes
     );
-
-    // 2. Check if user is trying to sell more than possible
-    uint maxSellable = getMaxSellableAmount(_outcome);
+    
+    // Collect user tokens
     uint n_outcome_tokens = getTokenWeiDown(token, _amount);
-    require(n_outcome_tokens <= maxSellable, string(abi.encodePacked("Max sellable: ", maxSellable, " tokens")));
     
-    // 3. Collect shares from user
-    uint pos = CT.getPositionId(IERC20(token), CT.getCollectionId(bytes32(0), condition, 1 << _outcome));
-    
-    try CT.safeTransferFrom(msg.sender, address(this), pos, n_outcome_tokens, "") {
-        // Success - continue
-    } catch Error(string memory reason) {
-        emit SplitPositionError("safeTransferFrom failed", reason);
-        revert(string(abi.encodePacked("safeTransferFrom failed: ", reason)));
-    }
-
-    // 4. Check if we need to mint missing tokens before burning
+    // Find how many tokens we can actually burn
     uint[] memory partition = getPositionAndDustPositions(_outcome);
-    bool needToMint = false;
-    uint tokensToMint = 0;
+    uint burnableAmount = n_outcome_tokens;
     
-    // Check if we have enough tokens for all outcomes in the partition
     for (uint i = 0; i < partition.length; i++) {
         uint posId = CT.getPositionId(IERC20(token), CT.getCollectionId(bytes32(0), condition, partition[i]));
         uint balance = CT.balanceOf(address(this), posId);
-        if (balance < n_outcome_tokens) {
-            needToMint = true;
-            tokensToMint = n_outcome_tokens - balance;
-            break; // We only need to mint once since splitPosition mints for all outcomes
+        if (balance < burnableAmount) {
+            burnableAmount = balance; // Limit to what we can actually burn
         }
     }
     
-    // Mint missing tokens if needed
-    if (needToMint) {
-        IERC20(token).approve(address(CT), tokensToMint);
-        CT.splitPosition(IERC20(token), bytes32(0), condition, partition, tokensToMint);
+    // Burn what we can
+    if (burnableAmount > 0) {
+        CT.mergePositions(IERC20(token), bytes32(0), condition, partition, burnableAmount);
     }
     
-    // 5. Burn outcome tokens and get DAI back
-    CT.mergePositions(IERC20(token), bytes32(0), condition, partition, n_outcome_tokens);
-
-    // 4. Update the inventory and state
+    // Pay user the full refund (regardless of how much we burned)
+    uint token_refund = getTokenWeiDown(token, refund_);
+    IERC20(token).safeTransfer(msg.sender, token_refund);
+    
+    // Update state
     q[_outcome] = ABDKMath.sub(q[_outcome], _amount);
     total_shares = new_total_shares;
     current_cost = new_cost;
-
-    // 5. Pay refund to user
-    uint token_refund = getTokenWeiDown(token, refund_);
-    IERC20(token).safeTransfer(msg.sender, token_refund);
 
     return refund_;
   }
