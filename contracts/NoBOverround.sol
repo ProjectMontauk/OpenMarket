@@ -235,6 +235,57 @@ contract LsLMSR is IERC1155Receiver, Ownable{
   }
 
   /**
+   * @notice Calculate exact shares that can be bought with a given DAI amount
+   * @param _outcome The outcome to buy shares for
+   * @param _betAmount The DAI amount the user wants to spend
+   * @return shares The exact number of shares that can be bought
+   */
+  function calculateSharesFromBetAmount(
+    uint256 _outcome,
+    uint256 _betAmount
+  ) public view onlyAfterInit returns (uint256 shares) {
+    require(_outcome < numOutcomes, "Invalid outcome index");
+    require(_betAmount > 0, "Bet amount must be positive");
+
+    // Convert bet amount to fixed-point
+    int128 betAmountFixed = getTokenEth(token, _betAmount);
+    
+    // Algebraic solution for x in: betAmount = b * ln(e^((q_outcome + x)/b) + sum_other e^(q_other/b)) - current_cost
+    // Rearranging: e^((q_outcome + x)/b) = e^((betAmount + current_cost)/b) - sum_other e^(q_other/b)
+    // Then: x = b * ln(e^((betAmount + current_cost)/b) - sum_other e^(q_other/b)) - q_outcome
+    
+    // Calculate e^((betAmount + current_cost)/b)
+    int128 targetCost = ABDKMath.add(betAmountFixed, current_cost);
+    int128 expTargetCostOverB = ABDKMath.exp(ABDKMath.div(targetCost, b));
+    
+    // Calculate sum of e^(q_other/b) for all other outcomes
+    int128 sumOtherOutcomes = ABDKMath.fromUInt(0);
+    for (uint i = 0; i < numOutcomes; i++) {
+      if (i != _outcome) {
+        sumOtherOutcomes = ABDKMath.add(sumOtherOutcomes, ABDKMath.exp(ABDKMath.div(q[i], b)));
+      }
+    }
+    
+    // Calculate e^((q_outcome + x)/b) = e^((betAmount + current_cost)/b) - sum_other e^(q_other/b)
+    int128 expOutcomePlusXOverB = ABDKMath.sub(expTargetCostOverB, sumOtherOutcomes);
+    
+    // Ensure the result is positive
+    require(expOutcomePlusXOverB > ABDKMath.fromUInt(0), "Bet amount too large for current market state");
+    
+    // Solve for x: x = b * ln(e^((q_outcome + x)/b)) - q_outcome
+    int128 x = ABDKMath.sub(
+      ABDKMath.mul(b, ABDKMath.ln(expOutcomePlusXOverB)),
+      q[_outcome]
+    );
+    
+    // Ensure x is non-negative
+    require(x >= ABDKMath.fromUInt(0), "Invalid share calculation");
+    
+    // Convert back to uint256 and return
+    return getTokenWeiDown(token, x);
+  }
+
+  /**
    *  This function will tell you the cost (similar to above) after a proposed
       transaction.
    */
