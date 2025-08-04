@@ -146,7 +146,6 @@ contract LsLMSR is IERC1155Receiver, Ownable{
 
     uint contractBalance = CT.balanceOf(address(this), pos);
     bool willMint = contractBalance < n_outcome_tokens;
-    emit DebugMinting(_outcome, contractBalance, n_outcome_tokens, willMint);
     
     if (willMint) {
         // Only mint the difference between what we need and what we have
@@ -168,14 +167,10 @@ contract LsLMSR is IERC1155Receiver, Ownable{
 
     (int128 new_cost, int128 price_, int128 new_total_shares) = _calculateBuyPrice(q, _outcome, _amount, total_shares, current_cost, numOutcomes);
 
-    // Apply overround as a multiplier to the buy price
-    int128 overround_multiplier = ABDKMath.add(ABDKMath.fromUInt(1), overround); // 1 + overround
-    int128 price_with_overround = ABDKMath.mul(price_, overround_multiplier);
-
-    uint token_cost = getTokenWeiUp(token, price_with_overround);
-    emit BuyTokenCost(token_cost, price_with_overround);
+    uint token_cost = getTokenWeiUp(token, price_);
+    emit BuyTokenCost(token_cost, price_);
     require(IERC20(token).transferFrom(msg.sender, address(this), token_cost), 'Error transferring tokens');
-
+    
     // Now update the actual inventory and state
     q[_outcome] = ABDKMath.add(q[_outcome], _amount);
     total_shares = new_total_shares;
@@ -183,7 +178,7 @@ contract LsLMSR is IERC1155Receiver, Ownable{
 
     _mintAndTransferOutcomeTokens(_outcome, _amount);
 
-    return price_with_overround;
+    return price_;
   }
 
   // getPositionAndDustPositions(1 << _outcome), n_outcome_tokens);
@@ -411,15 +406,24 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     require(CT.payoutDenominator(condition) == 0, "Market already resolved");
     require(q[_outcome] >= _amount, "Not enough shares to sell");
 
-    // Calculate refund
+    // 1. Calculate refund BEFORE updating state
     (int128 new_cost, int128 refund_, int128 new_total_shares) = _calculateSellRefund(
         q, _outcome, _amount, total_shares, current_cost, numOutcomes
     );
-    
-    // Collect user tokens
+
     uint n_outcome_tokens = getTokenWeiDown(token, _amount);
     
-    // Find how many tokens we can actually burn
+    // 3. Collect shares from user FIRST
+    uint pos = CT.getPositionId(IERC20(token), CT.getCollectionId(bytes32(0), condition, 1 << _outcome));
+    
+    try CT.safeTransferFrom(msg.sender, address(this), pos, n_outcome_tokens, "") {
+        // Success - continue
+    } catch Error(string memory reason) {
+        emit SplitPositionError("safeTransferFrom failed", reason);
+        revert(string(abi.encodePacked("safeTransferFrom failed: ", reason)));
+    }
+
+    // 4. Find how many tokens we can actually burn (limited by partner outcome tokens)
     uint[] memory partition = getPositionAndDustPositions(_outcome);
     uint burnableAmount = n_outcome_tokens;
     
@@ -431,19 +435,19 @@ contract LsLMSR is IERC1155Receiver, Ownable{
         }
     }
     
-    // Burn what we can
+    // 5. Burn what we can (this gets us some DAI back)
     if (burnableAmount > 0) {
         CT.mergePositions(IERC20(token), bytes32(0), condition, partition, burnableAmount);
     }
-    
-    // Pay user the full refund (regardless of how much we burned)
-    uint token_refund = getTokenWeiDown(token, refund_);
-    IERC20(token).safeTransfer(msg.sender, token_refund);
-    
-    // Update state
+
+    // 6. Update the inventory and state
     q[_outcome] = ABDKMath.sub(q[_outcome], _amount);
     total_shares = new_total_shares;
     current_cost = new_cost;
+
+    // 7. Pay refund to user (from contract balance + DAI from burning)
+    uint token_refund = getTokenWeiDown(token, refund_);
+    IERC20(token).safeTransfer(msg.sender, token_refund);
 
     return refund_;
   }
@@ -517,22 +521,41 @@ function getPositionInfo(uint256 _outcome) public view returns (uint256 position
     balance = CT.balanceOf(address(this), positionId);
 }
 
-function getMaxSellableAmount(uint256 _outcome) public view returns (uint256) {
-    require(_outcome < numOutcomes, "Invalid outcome index");
+function getPositionIds() public view returns (uint256 positionId0, uint256 positionId1) {
+    require(numOutcomes == 2, "This function only works for binary markets");
     
-    // Get partner outcome (the other outcome)
-    uint256 partnerOutcome = _outcome == 0 ? 1 : 0;
+    // Position ID for outcome 0
+    bytes32 collectionId0 = CT.getCollectionId(bytes32(0), condition, 1 << 0);
+    positionId0 = CT.getPositionId(IERC20(token), collectionId0);
     
-    // Get contract balance
-    uint256 contractBalance = IERC20(token).balanceOf(address(this));
-    
-    // Get existing partner outcome tokens
-    uint256 partnerPosId = CT.getPositionId(IERC20(token), 
-        CT.getCollectionId(bytes32(0), condition, 1 << partnerOutcome));
-    uint256 existingPartnerTokens = CT.balanceOf(address(this), partnerPosId);
-    
-    // Max sellable = contract balance + existing partner tokens
-    return contractBalance + existingPartnerTokens;
+    // Position ID for outcome 1
+    bytes32 collectionId1 = CT.getCollectionId(bytes32(0), condition, 1 << 1);
+    positionId1 = CT.getPositionId(IERC20(token), collectionId1);
 }
+
+function freezeMarket(bytes32 _questionId) external onlyOwner {
+    require(CT.payoutDenominator(condition) == 0, "Market already resolved");
+    require(numOutcomes == 2, "This function only works for binary markets");
+    
+    // Get current market odds
+    int128 prob0 = odds(0);  // Outcome 0 probability
+    int128 prob1 = odds(1);  // Outcome 1 probability
+    
+    // Convert to payout numerators (multiply by 1000 for precision)
+    uint payout0 = ABDKMath.mulu(prob0, 1000);
+    uint payout1 = ABDKMath.mulu(prob1, 1000);
+    
+    // Create dynamic array for payouts
+    uint[] memory payouts = new uint[](2);
+    payouts[0] = payout0;
+    payouts[1] = payout1;
+    
+    // Report freeze resolution with current odds
+    CT.reportPayouts(_questionId, payouts);
+}
+
+
+
+
 
 }

@@ -297,4 +297,6 @@ contract ConditionalTokens is ERC1155 {
     function getPositionId(IERC20 collateralToken, bytes32 collectionId) external pure returns (uint) {
         return CTHelpers.getPositionId(collateralToken, collectionId);
     }
+
+
 }
