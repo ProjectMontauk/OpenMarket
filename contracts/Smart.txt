@@ -1,4 +1,4 @@
-1) Just moving tokens from LMSR back user? 
+1) Just moving tokens from LMSR back to user? 
 
 User Wallet                    LMSR Contract              ConditionalTokens Contract
      |                              |                              |

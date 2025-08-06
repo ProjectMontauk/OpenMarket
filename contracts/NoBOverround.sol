@@ -31,6 +31,7 @@ contract LsLMSR is IERC1155Receiver, Ownable{
   int128 private total_shares;
   int128 public initial_subsidy;
   int128 public overround; // Store overround as 64.64 fixed-point
+  uint256 public accumulatedOverround; // Track accumulated overround fees in wei
 
   bytes32 public condition;
   ConditionalTokens private CT;
@@ -100,6 +101,9 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     // Transfer the initial subsidy to the contract
     IERC20(token).safeTransferFrom(msg.sender, address(this), _initialSubsidy);
 
+    // Set the initial subsidy in fixed-point format
+    initial_subsidy = getTokenEth(token, _initialSubsidy);
+
     for(uint i=0; i<_numOutcomes; i++) {
       q.push(0); // Start each outcome with zero shares
     }
@@ -159,26 +163,41 @@ contract LsLMSR is IERC1155Receiver, Ownable{
 
   function buy(
     uint256 _outcome,
-    int128 _amount
-  ) public onlyAfterInit returns (int128 _price) {
+    uint256 _betAmount
+  ) public onlyAfterInit returns (uint256 sharesReceived) {
     require(_outcome < numOutcomes, "Invalid outcome index");
-    require(_amount > 0, "Amount must be positive");
+    require(_betAmount > 0, "Bet amount must be positive");
     require(CT.payoutDenominator(condition) == 0, 'Market already resolved');
 
-    (int128 new_cost, int128 price_, int128 new_total_shares) = _calculateBuyPrice(q, _outcome, _amount, total_shares, current_cost, numOutcomes);
-
-    uint token_cost = getTokenWeiUp(token, price_);
-    emit BuyTokenCost(token_cost, price_);
-    require(IERC20(token).transferFrom(msg.sender, address(this), token_cost), 'Error transferring tokens');
+    // 1. Transfer the full bet amount from user to LMSR contract
+    require(IERC20(token).transferFrom(msg.sender, address(this), _betAmount), 'Error transferring tokens');
     
-    // Now update the actual inventory and state
-    q[_outcome] = ABDKMath.add(q[_outcome], _amount);
-    total_shares = new_total_shares;
-    current_cost = new_cost;
+    // 2. Apply overround to the bet amount using the set overround value
+    // Convert overround from fixed-point to basis points
+    uint256 overroundBips = ABDKMath.mulu(overround, 10000);
+    uint256 overroundPercentage = 10000 - overroundBips; // e.g., 10000 - 200 = 9800 (98%)
+    uint256 betAfterOverround = (_betAmount * overroundPercentage) / 10000;
+    uint256 overroundCollected = _betAmount - betAfterOverround;
+    
+    // Track accumulated overround
+    accumulatedOverround += overroundCollected;
+    
+    // 3. Calculate shares using the reduced bet amount
+    uint256 sharesToBuy = calculateSharesFromBetAmount(_outcome, betAfterOverround);
+    require(sharesToBuy > 0, "Bet amount too small to buy any shares");
 
-    _mintAndTransferOutcomeTokens(_outcome, _amount);
+    // 4. Convert shares to fixed-point for state updates
+    int128 sharesFixed = getTokenEth(token, sharesToBuy);
 
-    return price_;
+    // 5. Update the LMSR state with the actual shares given to user
+    q[_outcome] = ABDKMath.add(q[_outcome], sharesFixed);
+    total_shares = ABDKMath.add(total_shares, sharesFixed);
+    current_cost = cost(); // Recalculate cost with new state
+
+    // 6. Mint and transfer the calculated shares to user
+    _mintAndTransferOutcomeTokens(_outcome, sharesFixed);
+
+    return sharesToBuy;
   }
 
   // getPositionAndDustPositions(1 << _outcome), n_outcome_tokens);
@@ -451,6 +470,31 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     refund_ = ABDKMath.sub(current_cost_, new_cost);
 }
 
+  /**
+   * @notice Calculate the refund amount for selling shares (public wrapper)
+   * @param _outcome The outcome to sell shares for
+   * @param _amount The number of shares to sell (in wei)
+   * @return refund The refund amount in wei
+   */
+  function calculateSellRefund(
+    uint256 _outcome,
+    uint256 _amount
+  ) public view onlyAfterInit returns (uint256 refund) {
+    require(_outcome < numOutcomes, "Invalid outcome index");
+    require(_amount > 0, "Amount must be positive");
+    
+    // Convert wei amount to fixed-point
+    int128 amountFixed = getTokenEth(token, _amount);
+    
+    // Calculate refund using internal function
+    (, int128 refund_, ) = _calculateSellRefund(
+        q, _outcome, amountFixed, total_shares, current_cost, numOutcomes
+    );
+    
+    // Convert refund back to wei and return
+    return getTokenWeiDown(token, refund_);
+  }
+
   function sell(uint256 _outcome, int128 _amount) public onlyAfterInit returns (int128 refund) {
     require(_outcome < numOutcomes, "Invalid outcome index");
     require(_amount > 0, "Amount must be positive");
@@ -540,29 +584,103 @@ contract LsLMSR is IERC1155Receiver, Ownable{
 }
 
 function getAccumulatedFees() public view returns (uint) {
+    return accumulatedOverround;
+}
+
+function getContractSurplus() public view returns (uint) {
     uint contractBalance = IERC20(token).balanceOf(address(this));
     uint theoreticalCost = getTokenWei(token, current_cost);
+    
+    // Check if contract balance is greater than theoretical cost to avoid underflow
     if (contractBalance > theoreticalCost) {
         return contractBalance - theoreticalCost;
     } else {
-        return 0;
+        return 0; // No surplus if balance is less than or equal to theoretical cost
     }
 }
 
 event FeesWithdrawn(address indexed to, uint256 amount);
+event OverroundUpdated(uint256 newOverround);
+event LiquidityParameterUpdated(uint256 newB, uint256 additionalCapital);
 
-function withdrawFees() public onlyOwner {
-    uint actualBalance = IERC20(token).balanceOf(address(this));
-    uint theoreticalCost = getTokenWei(token, current_cost);
-    require(actualBalance > theoreticalCost, "No fees to withdraw");
-    uint fees = actualBalance - theoreticalCost;
-    IERC20(token).safeTransfer(owner(), fees);
-    emit FeesWithdrawn(owner(), fees);
+function calculateRequiredCapitalForNewB(uint256 _newBInput) public view returns (uint256 requiredCapital) {
+    require(_newBInput > 0, "New b must be greater than 0");
+    
+    // Convert new b input to fixed-point
+    int128 newB = getTokenEth(token, _newBInput);
+    
+    // Ensure new b is greater than current b
+    require(newB > b, "New b must be greater than current b");
+    
+    // Calculate required additional capital: b * ln(2) - initial_subsidy
+    int128 ln2 = ABDKMath.ln(ABDKMath.fromUInt(2)); // ln(2) ≈ 0.693
+    int128 newMaxLoss = ABDKMath.mul(newB, ln2);
+    int128 requiredAdditionalCapital = ABDKMath.sub(newMaxLoss, initial_subsidy);
+    
+    // Ensure additional capital is sufficient
+    require(requiredAdditionalCapital > ABDKMath.fromUInt(0), "New b must be greater than initial subsidy / ln(2)");
+    
+    // Convert required capital to wei and return
+    return getTokenWeiUp(token, requiredAdditionalCapital);
 }
 
-function debugFees() public view returns (uint contractBalance, uint theoreticalCost) {
+function setOverround(uint256 _newOverround) public onlyOwner {
+    require(_newOverround > 0, "Overround must be greater than 0");
+    require(_newOverround <= 500, "Overround cannot exceed 5% (500 bips)");
+    
+    overround = ABDKMath.divu(_newOverround, 10000);
+    emit OverroundUpdated(_newOverround);
+}
+
+function setLiquidityParameter(uint256 _newBInput, uint256 _additionalCapital) public onlyOwner {
+    require(_newBInput > 0, "New b must be greater than 0");
+    
+    // Convert new b input to fixed-point
+    int128 newB = getTokenEth(token, _newBInput);
+    
+    // Ensure new b is greater than current b
+    require(newB > b, "New b must be greater than current b");
+    
+    // Calculate required additional capital: b * ln(2) - initial_subsidy
+    int128 ln2 = ABDKMath.ln(ABDKMath.fromUInt(2)); // ln(2) ≈ 0.693
+    int128 newMaxLoss = ABDKMath.mul(newB, ln2);
+    int128 requiredAdditionalCapital = ABDKMath.sub(newMaxLoss, initial_subsidy);
+    
+    // Ensure additional capital is sufficient
+    require(requiredAdditionalCapital > ABDKMath.fromUInt(0), "New b must be greater than initial subsidy / ln(2)");
+    
+    // Convert required capital to wei for comparison
+    uint256 requiredCapitalWei = getTokenWeiUp(token, requiredAdditionalCapital);
+    require(_additionalCapital >= requiredCapitalWei, "Insufficient additional capital provided");
+    
+    // Transfer the additional capital from owner to contract
+    IERC20(token).safeTransferFrom(msg.sender, address(this), _additionalCapital);
+    
+    // Update the liquidity parameter
+    b = newB;
+    
+    // Recalculate current cost with new b
+    current_cost = cost();
+    
+    emit LiquidityParameterUpdated(_newBInput, _additionalCapital);
+}
+
+function withdrawCollectedOverround(uint256 _amount) public onlyOwner {
+    require(accumulatedOverround > 0, "No accumulated overround to withdraw");
+    require(_amount > 0, "Amount must be greater than 0");
+    require(_amount <= accumulatedOverround, "Amount exceeds accumulated overround");
+    require(IERC20(token).balanceOf(address(this)) >= _amount, "Insufficient contract balance");
+    
+    IERC20(token).safeTransfer(owner(), _amount);
+    accumulatedOverround -= _amount; // Reduce accumulated overround by withdrawn amount
+    emit FeesWithdrawn(owner(), _amount);
+}
+
+function debugFees() public view returns (uint contractBalance, uint theoreticalCost, uint accumulatedOverroundFees, uint availableOverround) {
     contractBalance = IERC20(token).balanceOf(address(this));
     theoreticalCost = getTokenWei(token, current_cost);
+    accumulatedOverroundFees = accumulatedOverround;
+    availableOverround = getContractSurplus();
 }
 
 function getPositionInfo(uint256 _outcome) public view returns (uint256 positionId, uint256 balance) {
