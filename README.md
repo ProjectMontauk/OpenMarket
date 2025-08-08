@@ -1,12 +1,38 @@
-#taco
-I kept the repo private so please let me know which emails need access and I can add them as collaborators
-There are a couple of debugging functions still in the code which I’d like to keep for now
-The in-scope contracts are in the contracts folder and all five are mentioned below
-ABDKMath64x64.sol & CTHelpers.sol are mathematical helper functions
-FakeDai.sol is a standard test ERC-20 token contract 
-ConditionalTokens.sol manages the ERC-1155 outcome tokens
-NoBOverround.sol manages the market making operations 
-I’m still working on building out test cases which I will submit when it comes time for the actual audit
-The code is going to be deployed on the Base network
-The TestDai.sol contract will be replaced by USDC in the final version 
-ThirdWeb RPC is used to execute contract functions and interact with data in the app
+# 📦 Smart Contract Audit Repo (Private)
+
+This repository contains the smart contracts intended for an upcoming audit.  
+🔒 **The repository is private** — please let me know which email addresses need access, and I’ll add them as collaborators.
+
+---
+
+## 📁 Contract Overview
+
+All in-scope contracts are located in the `contracts/` folder. The following five contracts are included for audit:
+
+| Contract                | Description                                                                |
+|-------------------------|----------------------------------------------------------------------------|
+| `ABDKMath64x64.sol`     | Mathematical helper library                                                |
+| `CTHelpers.sol`         | Additional mathematical helper functions                                   |
+| `FakeDai.sol`           | Standard ERC-20 test token used for development                           |
+| `ConditionalTokens.sol` | Manages ERC-1155 outcome tokens and conditional logic                      |
+| `NoBOverround.sol`      | Handles market making operations                                           |
+
+> ⚠️ `TestDai.sol` is currently used for testing, but **USDC** will replace it in the final deployment.
+
+---
+
+## 🛠️ Network & Tooling
+
+- **Target Deployment Network:** Base  
+- **RPC Provider:** [ThirdWeb RPC](https://thirdweb.com/) is used to execute contract functions and interact with on-chain data.
+
+---
+
+## 🚧 Development Notes
+
+- 🐞 Some **debugging functions** are still present in the code. These will be retained temporarily for development and testing.
+- 🧪 **Test cases** are still in progress and will be submitted before the formal audit.
+
+---
+
+Feel free to reach out for access or further information.
