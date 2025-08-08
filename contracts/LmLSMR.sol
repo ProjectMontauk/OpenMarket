@@ -333,7 +333,7 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     uint multiplier = 10 ** d;
     require(_amount >= 0, "Amount must be non-negative");
     return ABDKMath.mulu(_amount, multiplier); // Default is round down
-}
+  }
 
   function getTokenEth(
     address _token,
@@ -402,7 +402,7 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     new_cost = ABDKMath.mul(new_b, ABDKMath.ln(sum_total));
     refund_ = ABDKMath.sub(current_cost_, new_cost);
 }
-
+  
   function sell(uint256 _outcome, int128 _amount) public onlyAfterInit returns (int128 refund) {
     require(_outcome < numOutcomes, "Invalid outcome index");
     require(_amount > 0, "Amount must be positive");
@@ -434,7 +434,7 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     IERC20(token).safeTransfer(msg.sender, token_refund);
 
     return refund_;
-}
+  }
 
   function getLiquidityParameter() public view returns (int128) {
     return b;

@@ -253,7 +253,7 @@ contract ConditionalTokens is ERC1155 {
 
             uint payoutStake = balanceOf(msg.sender, positionId);
             if (payoutStake > 0) {
-                totalPayout = totalPayout + (payoutStake * (payoutNumerator / (den)));
+                totalPayout = totalPayout + (payoutStake * payoutNumerator) / den;
                 _burn(msg.sender, positionId, payoutStake);
             }
         }
@@ -273,6 +273,69 @@ contract ConditionalTokens is ERC1155 {
     /// @return Number of outcome slots associated with a condition, or zero if condition has not been prepared yet.
     function getOutcomeSlotCount(bytes32 conditionId) external view returns (uint) {
         return payoutNumerators[conditionId].length;
+    }
+
+    /// @dev Debug function that simulates redeemPositions without actually burning tokens or sending money.
+    /// @param collateralToken The address of the positions' backing collateral token.
+    /// @param parentCollectionId The ID of the outcome collections common to the position being split and the split target positions.
+    /// @param conditionId The ID of the condition to redeem from.
+    /// @param indexSets An array of index sets representing the outcome positions to redeem.
+    /// @param user The address of the user to simulate redemption for.
+    /// @return totalPayout The total payout that would be received.
+    /// @return userBalances Array of user's token balances for each indexSet.
+    /// @return debugPayoutNumerators Array of payout numerators for each indexSet.
+    /// @return debugPayoutDenominator The payout denominator for the condition.
+    /// @return debugOutcomeSlotCount The number of outcome slots for the condition.
+    function debugRedeemPositions(
+        IERC20 collateralToken,
+        bytes32 parentCollectionId,
+        bytes32 conditionId,
+        uint[] calldata indexSets,
+        address user
+    ) external view returns (
+        uint totalPayout,
+        uint[] memory userBalances,
+        uint[] memory debugPayoutNumerators,
+        uint debugPayoutDenominator,
+        uint debugOutcomeSlotCount
+    ) {
+        debugPayoutDenominator = payoutDenominator[conditionId];
+        debugOutcomeSlotCount = payoutNumerators[conditionId].length;
+        
+        // Initialize arrays
+        userBalances = new uint[](indexSets.length);
+        debugPayoutNumerators = new uint[](indexSets.length);
+        
+        uint fullIndexSet = (1 << debugOutcomeSlotCount) - 1;
+        
+        for (uint i = 0; i < indexSets.length; i++) {
+            uint indexSet = indexSets[i];
+            require(indexSet > 0 && indexSet < fullIndexSet, "got invalid index set");
+            
+            uint positionId = CTHelpers.getPositionId(collateralToken,
+                CTHelpers.getCollectionId(parentCollectionId, conditionId, indexSet));
+
+            // Get user's balance for this indexSet
+            userBalances[i] = balanceOf(user, positionId);
+            
+            // Calculate payout numerator for this indexSet
+            uint debugPayoutNumerator = 0;
+            for (uint j = 0; j < debugOutcomeSlotCount; j++) {
+                if (indexSet & (1 << j) != 0) {
+                    debugPayoutNumerator = debugPayoutNumerator + (payoutNumerators[conditionId][j]);
+                }
+            }
+            debugPayoutNumerators[i] = debugPayoutNumerator;
+            
+            // Calculate payout for this indexSet
+            if (userBalances[i] > 0 && debugPayoutDenominator > 0) {
+                totalPayout = totalPayout + ((userBalances[i] * debugPayoutNumerator) / debugPayoutDenominator);
+            }
+        }
+        
+        // Set return values
+        // debugPayoutDenominator = debugPayoutDenominator;
+        // debugOutcomeSlotCount = debugOutcomeSlotCount;
     }
 
     /// @dev Constructs an outcome collection ID from a parent collection and an outcome collection.

@@ -71,8 +71,6 @@ contract LsLMSR is IERC1155Receiver, Ownable{
 
   /**
    * @notice Set up some of the variables for the market maker
-   * @param _oracle The address for the EOA/contract which will act as the
-      oracle for this condition
    * @param _questionId The question ID (needs to be unique)
    * @param _numOutcomes The number of different outcomes available
    * @param bInput The liquidity parameter b for the LMSR market maker
@@ -81,7 +79,6 @@ contract LsLMSR is IERC1155Receiver, Ownable{
    * represented in bips. Therefore inputting 300 represents 0.30%
    */
   function setup(
-    address _oracle,
     bytes32 _questionId,
     uint _numOutcomes,
     uint bInput,
@@ -90,8 +87,10 @@ contract LsLMSR is IERC1155Receiver, Ownable{
   ) public onlyOwner() {
     require(init == false,'Already init');
     require(_overround > 0,'Cannot have 0 overround');
-    CT.prepareCondition(_oracle, _questionId, _numOutcomes);
-    condition = CT.getConditionId(_oracle, _questionId, _numOutcomes);
+    // Use the LMSR contract as the oracle for ConditionalTokens
+    // Note: _oracle parameter is ignored - LMSR contract is always the oracle
+    CT.prepareCondition(address(this), _questionId, _numOutcomes);
+    condition = CT.getConditionId(address(this), _questionId, _numOutcomes);
 
     numOutcomes = _numOutcomes;
     int128 n = ABDKMath.fromUInt(_numOutcomes);
@@ -702,6 +701,69 @@ function getPositionIds() public view returns (uint256 positionId0, uint256 posi
     positionId1 = CT.getPositionId(IERC20(token), collectionId1);
 }
 
+function getRedeemParameters() public view returns (
+    address collateralToken,
+    bytes32 parentCollectionId,
+    bytes32 conditionId,
+    uint[] memory indexSets
+) {
+    collateralToken = token;
+    parentCollectionId = bytes32(0);
+    conditionId = condition;
+    
+    // Create indexSets for all outcomes
+    indexSets = new uint[](numOutcomes);
+    for (uint i = 0; i < numOutcomes; i++) {
+        indexSets[i] = 1 << i;
+    }
+}
+
+function debugRedemption(address user) public view returns (
+    uint payoutDenominator,
+    uint[] memory payoutNumerators,
+    uint[] memory userBalances,
+    uint[] memory expectedPayouts
+) {
+    payoutDenominator = CT.payoutDenominator(condition);
+    payoutNumerators = new uint[](numOutcomes);
+    userBalances = new uint[](numOutcomes);
+    expectedPayouts = new uint[](numOutcomes);
+    
+    for (uint i = 0; i < numOutcomes; i++) {
+        payoutNumerators[i] = CT.payoutNumerators(condition, i);
+        
+        // Get user's balance for this outcome
+        bytes32 collectionId = CT.getCollectionId(bytes32(0), condition, 1 << i);
+        uint positionId = CT.getPositionId(IERC20(token), collectionId);
+        userBalances[i] = CT.balanceOf(user, positionId);
+        
+        // Calculate expected payout
+        if (payoutDenominator > 0) {
+            expectedPayouts[i] = (userBalances[i] * payoutNumerators[i]) / payoutDenominator;
+        }
+    }
+}
+
+function debugRedeemPositions(address user, uint[] calldata indexSets) public view returns (
+    uint totalPayout,
+    uint[] memory userBalances,
+    uint[] memory payoutNumerators,
+    uint payoutDenominator,
+    uint outcomeSlotCount
+) {
+    // Get redemption parameters
+    (address collateralToken, bytes32 parentCollectionId, bytes32 conditionId, ) = getRedeemParameters();
+    
+    // Call the ConditionalTokens debug function
+    return CT.debugRedeemPositions(
+        IERC20(collateralToken),
+        parentCollectionId,
+        conditionId,
+        indexSets,
+        user
+    );
+}
+
 function freezeMarket(bytes32 _questionId) external onlyOwner {
     require(CT.payoutDenominator(condition) == 0, "Market already resolved");
     require(numOutcomes == 2, "This function only works for binary markets");
@@ -723,8 +785,53 @@ function freezeMarket(bytes32 _questionId) external onlyOwner {
     CT.reportPayouts(_questionId, payouts);
 }
 
+function reportFullPayouts(bytes32 _questionId, uint256 _winningOutcome) external onlyOwner {
+    require(CT.payoutDenominator(condition) == 0, "Market already resolved");
+    require(_winningOutcome < numOutcomes, "Invalid outcome");
+    
+    // Create payout array where winning outcome gets 100% and others get 0%
+    uint[] memory payouts = new uint[](numOutcomes);
+    for (uint i = 0; i < numOutcomes; i++) {
+        if (i == _winningOutcome) {
+            payouts[i] = 1000; // 100% payout (1000/1000)
+        } else {
+            payouts[i] = 0;     // 0% payout (0/1000)
+        }
+    }
+    
+    // Report winner-takes-all resolution
+    CT.reportPayouts(_questionId, payouts);
+}
 
+/**
+ * @notice Allows the owner to redeem outcome tokens held by the LMSR contract
+ * @param indexSets Array of index sets representing the outcome positions to redeem
+ */
+function redeemContractShares(uint[] calldata indexSets) external onlyOwner {
+    require(CT.payoutDenominator(condition) > 0, "Market not resolved yet");
+    
+    (address collateralToken, bytes32 parentCollectionId, bytes32 conditionId, ) = getRedeemParameters();
+    
+    CT.redeemPositions(
+        IERC20(collateralToken),
+        parentCollectionId,
+        conditionId,
+        indexSets
+    );
+}
 
-
+/**
+ * @notice Debug function to check what outcome tokens the LMSR contract holds
+ * @return contractBalances Array of token balances held by the LMSR contract for each outcome
+ */
+function getContractBalances() public view returns (uint[] memory contractBalances) {
+    contractBalances = new uint[](numOutcomes);
+    
+    for (uint i = 0; i < numOutcomes; i++) {
+        bytes32 collectionId = CT.getCollectionId(bytes32(0), condition, 1 << i);
+        uint positionId = CT.getPositionId(IERC20(token), collectionId);
+        contractBalances[i] = CT.balanceOf(address(this), positionId);
+    }
+}
 
 }

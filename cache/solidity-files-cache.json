@@ -8,6 +8,7 @@
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -38,12 +39,13 @@
       ]
     },
     "/Users/trevorgillan/Desktop/Projects/Taco/contracts/NoBOverround.sol": {
-      "lastModificationDate": 1754508652193,
-      "contentHash": "a26b709ee0eb6ad43881cde8cf950c67",
+      "lastModificationDate": 1754660856001,
+      "contentHash": "e80f167db0e1a8ad641ffd0657df8fbb",
       "sourceName": "contracts/NoBOverround.sol",
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -83,12 +85,13 @@
       ]
     },
     "/Users/trevorgillan/Desktop/Projects/Taco/contracts/ConditionalTokens.sol": {
-      "lastModificationDate": 1754065037103,
-      "contentHash": "113745de0f4fafee919379c1fc04b4a7",
+      "lastModificationDate": 1754660613390,
+      "contentHash": "3ff6ed31e6823dfef62a582c9e115107",
       "sourceName": "contracts/ConditionalTokens.sol",
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -129,6 +132,7 @@
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -167,6 +171,7 @@
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -205,6 +210,7 @@
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -243,6 +249,7 @@
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -284,6 +291,7 @@
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -320,6 +328,7 @@
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -359,6 +368,7 @@
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -397,6 +407,7 @@
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -441,6 +452,7 @@
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -477,6 +489,7 @@
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -508,44 +521,6 @@
         "ERC165"
       ]
     },
-    "/Users/trevorgillan/Desktop/Projects/Taco/node_modules/@openzeppelin/contracts/interfaces/draft-IERC6093.sol": {
-      "lastModificationDate": 1749164842365,
-      "contentHash": "267d92fe4de67b1bdb3302c08f387dbf",
-      "sourceName": "@openzeppelin/contracts/interfaces/draft-IERC6093.sol",
-      "solcConfig": {
-        "version": "0.8.30",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 800
-          },
-          "evmVersion": "paris",
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        "^0.8.20"
-      ],
-      "artifacts": [
-        "IERC1155Errors",
-        "IERC20Errors",
-        "IERC721Errors"
-      ]
-    },
     "/Users/trevorgillan/Desktop/Projects/Taco/node_modules/@openzeppelin/contracts/utils/Arrays.sol": {
       "lastModificationDate": 1749164842361,
       "contentHash": "87b3640dbda6477c44a91647d48ff29c",
@@ -553,6 +528,7 @@
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -587,13 +563,14 @@
         "Arrays"
       ]
     },
-    "/Users/trevorgillan/Desktop/Projects/Taco/node_modules/@openzeppelin/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol": {
-      "lastModificationDate": 1749164842376,
-      "contentHash": "f8867afd172ace7ffa75d3752d785770",
-      "sourceName": "@openzeppelin/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol",
+    "/Users/trevorgillan/Desktop/Projects/Taco/node_modules/@openzeppelin/contracts/interfaces/draft-IERC6093.sol": {
+      "lastModificationDate": 1749164842365,
+      "contentHash": "267d92fe4de67b1bdb3302c08f387dbf",
+      "sourceName": "@openzeppelin/contracts/interfaces/draft-IERC6093.sol",
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -615,14 +592,14 @@
           }
         }
       },
-      "imports": [
-        "../IERC1155.sol"
-      ],
+      "imports": [],
       "versionPragmas": [
         "^0.8.20"
       ],
       "artifacts": [
-        "IERC1155MetadataURI"
+        "IERC1155Errors",
+        "IERC20Errors",
+        "IERC721Errors"
       ]
     },
     "/Users/trevorgillan/Desktop/Projects/Taco/node_modules/@openzeppelin/contracts/token/ERC1155/IERC1155.sol": {
@@ -632,6 +609,7 @@
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -663,6 +641,45 @@
         "IERC1155"
       ]
     },
+    "/Users/trevorgillan/Desktop/Projects/Taco/node_modules/@openzeppelin/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol": {
+      "lastModificationDate": 1749164842376,
+      "contentHash": "f8867afd172ace7ffa75d3752d785770",
+      "sourceName": "@openzeppelin/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol",
+      "solcConfig": {
+        "version": "0.8.30",
+        "settings": {
+          "viaIR": true,
+          "optimizer": {
+            "enabled": true,
+            "runs": 800
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../IERC1155.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "IERC1155MetadataURI"
+      ]
+    },
     "/Users/trevorgillan/Desktop/Projects/Taco/node_modules/@openzeppelin/contracts/token/ERC1155/utils/ERC1155Utils.sol": {
       "lastModificationDate": 1749164842368,
       "contentHash": "4f861c27a66d75d2576d11c058a2e17b",
@@ -670,6 +687,7 @@
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -709,6 +727,7 @@
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -745,6 +764,7 @@
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -774,42 +794,6 @@
         "Comparators"
       ]
     },
-    "/Users/trevorgillan/Desktop/Projects/Taco/node_modules/@openzeppelin/contracts/utils/SlotDerivation.sol": {
-      "lastModificationDate": 1749164842383,
-      "contentHash": "43950136ee6a1761d2cbed39d16bb1e0",
-      "sourceName": "@openzeppelin/contracts/utils/SlotDerivation.sol",
-      "solcConfig": {
-        "version": "0.8.30",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 800
-          },
-          "evmVersion": "paris",
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        "^0.8.20"
-      ],
-      "artifacts": [
-        "SlotDerivation"
-      ]
-    },
     "/Users/trevorgillan/Desktop/Projects/Taco/node_modules/@openzeppelin/contracts/utils/StorageSlot.sol": {
       "lastModificationDate": 1749164842383,
       "contentHash": "e656d64c4ce918f3d13030b91c935134",
@@ -817,6 +801,7 @@
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -846,6 +831,43 @@
         "StorageSlot"
       ]
     },
+    "/Users/trevorgillan/Desktop/Projects/Taco/node_modules/@openzeppelin/contracts/utils/SlotDerivation.sol": {
+      "lastModificationDate": 1749164842383,
+      "contentHash": "43950136ee6a1761d2cbed39d16bb1e0",
+      "sourceName": "@openzeppelin/contracts/utils/SlotDerivation.sol",
+      "solcConfig": {
+        "version": "0.8.30",
+        "settings": {
+          "viaIR": true,
+          "optimizer": {
+            "enabled": true,
+            "runs": 800
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "SlotDerivation"
+      ]
+    },
     "/Users/trevorgillan/Desktop/Projects/Taco/node_modules/@openzeppelin/contracts/utils/math/Math.sol": {
       "lastModificationDate": 1749164842380,
       "contentHash": "5ec781e33d3a9ac91ffdc83d94420412",
@@ -853,6 +875,7 @@
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -892,6 +915,7 @@
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -928,6 +952,7 @@
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -964,6 +989,7 @@
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -1002,6 +1028,7 @@
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -1034,42 +1061,6 @@
         "IERC1363"
       ]
     },
-    "/Users/trevorgillan/Desktop/Projects/Taco/node_modules/@openzeppelin/contracts/interfaces/IERC20.sol": {
-      "lastModificationDate": 1749164842377,
-      "contentHash": "79af12d64eacc7d77b9ee2ac4b4d51ee",
-      "sourceName": "@openzeppelin/contracts/interfaces/IERC20.sol",
-      "solcConfig": {
-        "version": "0.8.30",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 800
-          },
-          "evmVersion": "paris",
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [
-        "../token/ERC20/IERC20.sol"
-      ],
-      "versionPragmas": [
-        "^0.8.20"
-      ],
-      "artifacts": []
-    },
     "/Users/trevorgillan/Desktop/Projects/Taco/node_modules/@openzeppelin/contracts/interfaces/IERC165.sol": {
       "lastModificationDate": 1749164842377,
       "contentHash": "f808b485ee0cdc6768ee8385ae5f9a2a",
@@ -1077,6 +1068,7 @@
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -1106,6 +1098,43 @@
       ],
       "artifacts": []
     },
+    "/Users/trevorgillan/Desktop/Projects/Taco/node_modules/@openzeppelin/contracts/interfaces/IERC20.sol": {
+      "lastModificationDate": 1749164842377,
+      "contentHash": "79af12d64eacc7d77b9ee2ac4b4d51ee",
+      "sourceName": "@openzeppelin/contracts/interfaces/IERC20.sol",
+      "solcConfig": {
+        "version": "0.8.30",
+        "settings": {
+          "viaIR": true,
+          "optimizer": {
+            "enabled": true,
+            "runs": 800
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../token/ERC20/IERC20.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": []
+    },
     "/Users/trevorgillan/Desktop/Projects/Taco/contracts/NoB.sol": {
       "lastModificationDate": 1753447522190,
       "contentHash": "c94466ae86c4a0755e28c7b8ac4d1eee",
@@ -1113,6 +1142,7 @@
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
@@ -1152,12 +1182,13 @@
       ]
     },
     "/Users/trevorgillan/Desktop/Projects/Taco/contracts/LmLSMR.sol": {
-      "lastModificationDate": 1753366269346,
-      "contentHash": "21044195f0ddb1baca4d6c18991c6533",
+      "lastModificationDate": 1754600556851,
+      "contentHash": "627b417ac8269730176c53ac985ae247",
       "sourceName": "contracts/LmLSMR.sol",
       "solcConfig": {
         "version": "0.8.30",
         "settings": {
+          "viaIR": true,
           "optimizer": {
             "enabled": true,
             "runs": 800
