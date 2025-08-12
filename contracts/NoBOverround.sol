@@ -12,7 +12,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./ABDKMath64x64.sol";
-import "./FakeDai.sol";
+import "./FakeUSDC.sol";
 
 contract LsLMSR is IERC1155Receiver, Ownable{
 
