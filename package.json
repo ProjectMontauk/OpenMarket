@@ -1,10 +1,13 @@
 {
+  "name": "Tinfoil",
+  "type": "module",
   "dependencies": {
     "@openzeppelin/contracts": "^5.3.0"
   },
   "devDependencies": {
-    "hardhat": "^2.19.0",
-    "@nomicfoundation/hardhat-toolbox": "^4.0.0"
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@nomicfoundation/hardhat-viem": "^3.0.0",
+    "hardhat": "^3.0.0"
   },
   "scripts": {
     "compile": "hardhat compile",

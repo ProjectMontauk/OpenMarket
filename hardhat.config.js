@@ -1,29 +1,36 @@
-require("@nomicfoundation/hardhat-toolbox");
+import hardhatViem from "@nomicfoundation/hardhat-viem";
 
 /** @type import('hardhat/config').HardhatUserConfig */
-module.exports = {
+export default {
   solidity: {
     version: "0.8.30",
     settings: {
-      viaIR: true,
+      viaIR: true,  // Keep this - your contract needs it
       optimizer: {
         enabled: true,
         runs: 800,
       },
     },
   },
+  plugins: [
+    hardhatViem,  // Add the Viem plugin
+  ],
   networks: {
     hardhat: {
       chainId: 1337,
+      type: "http",
+      url: "http://127.0.0.1:8545"
     },
     localhost: {
       url: "http://127.0.0.1:8545",
       chainId: 1337,
+      type: "http"
     },
     // Add other networks as needed
     // sepolia: {
     //   url: process.env.SEPOLIA_URL || "",
     //   accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    //   type: "http"
     // },
   },
   paths: {
