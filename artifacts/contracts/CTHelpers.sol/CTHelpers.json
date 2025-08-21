@@ -1,0 +1,13 @@
+{
+  "_format": "hh3-artifact-1",
+  "contractName": "CTHelpers",
+  "sourceName": "contracts/CTHelpers.sol",
+  "abi": [],
+  "bytecode": "0x6080806040523460175760399081601c823930815050f35b5f80fdfe5f80fdfea2646970667358221220c789673d66f36448d7b73afc5a65c0714d91d9f1eed7ef6d0dd59852d1a8473164736f6c634300081e0033",
+  "deployedBytecode": "0x5f80fdfea2646970667358221220c789673d66f36448d7b73afc5a65c0714d91d9f1eed7ef6d0dd59852d1a8473164736f6c634300081e0033",
+  "linkReferences": {},
+  "deployedLinkReferences": {},
+  "immutableReferences": {},
+  "inputSourceName": "project/contracts/CTHelpers.sol",
+  "buildInfoId": "solc-0_8_30-ffd34bdb928c85e939f7457114f12cb3671a4822"
+}

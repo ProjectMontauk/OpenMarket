@@ -12,6 +12,7 @@ async function main() {
   // Mint more tokens
   const mintAmount = 1000000n * 10n**6n;
   await fakeUsdc.write.mint([deployer.account.address, mintAmount]);
+  console.log("Minted", mintAmount / 10n**6n);
   
   console.log("FakeUSDC Address:", fakeUsdc.address);
   console.log("Deployer address:", deployer.account.address);
