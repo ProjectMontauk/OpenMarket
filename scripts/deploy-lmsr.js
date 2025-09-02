@@ -11,7 +11,7 @@ async function main() {
   
   // Deploy FakeUSDC first
   console.log("Deploying FakeUSDC...");
-  const fakeUsdc = await viem.deployContract("FakeUSDC");
+  const fakeUsdc = await viem.deployContract("FakeUsdc");
   console.log("FakeUSDC deployed to:", fakeUsdc.address);
   
   // Deploy ConditionalTokens
