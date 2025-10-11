@@ -3,12 +3,12 @@
 OpenMarket is the first Open-Source continuous trading prediction market AMM that allows users to buy and sell shares however they'd like until the market expiration date. Unlike other open-source repos that don't allow users to sell shares prior to market conclusion, OpenMarket enables continuous trading throughout the entire market lifecycle. 
 ---
 
-## 🚀 What Makes Nash Unique
+## 🚀 What Makes OpenMarket Unique
 
 - **🔄 Continuous Trading**: Buy and sell shares at any time until market expiration
-- **📈 AMM-Based**: Uses Automated Market Maker mechanics for price discovery
+- **📈 AMM-Based**: Uses Automated Market Maker mechanics for price discovery 
 - **⚡ Real-Time Pricing**: Dynamic pricing based on current market sentiment
-- **🎯 Flexible Participation**: No fixed trading windows or rounds
+- **🎯 Flexible Resolution**: Market owner can resolve the market at current market odds
 
 ---
 
