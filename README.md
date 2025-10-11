@@ -8,7 +8,7 @@ OpenMarket is the first Open-Source continuous trading prediction market AMM tha
 - **🔄 Continuous Trading**: Buy and sell shares at any time until market expiration
 - **📈 AMM-Based**: Uses Automated Market Maker mechanics for price discovery 
 - **🎯 Flexible Resolution**: Market owner can resolve the market at current market odds
-- **🛠️ Easy Liquidity**: Market owner only needs to provide market liquidity once during market creation, and market maker downside is capped to b*ln(liquidity parameter)
+- **🛠️ Easy Liquidity**: Market owner only needs to provide market liquidity once during market creation, and market maker downside is capped to liquidity provided * ln(2)
 
 ---
 
