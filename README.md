@@ -1,38 +1,74 @@
-# 📦 Smart Contract Audit Repo (Private)
+# 📦 Smart Contract Audit Repo (Public)
 
-This repository contains the smart contracts intended for an upcoming audit.  
-🔒 **The repository is private** — please let me know which email addresses need access, and I’ll add them as collaborators.
+OpenMarket is the first Open-Source continuous trading prediction market AMM that allows users to buy and sell shares however they'd like until the market expiration date. Unlike traditional prediction markets with discrete rounds, Nash enables seamless, continuous trading throughout the entire market lifecycle.
 
 ---
 
-## 📁 Contract Overview
+## 🚀 What Makes Nash Unique
 
-All in-scope contracts are located in the `contracts/` folder. The following five contracts are included for audit:
+- **🔄 Continuous Trading**: Buy and sell shares at any time until market expiration
+- **📈 AMM-Based**: Uses Automated Market Maker mechanics for price discovery
+- **⚡ Real-Time Pricing**: Dynamic pricing based on current market sentiment
+- **🎯 Flexible Participation**: No fixed trading windows or rounds
+
+---
+
+## 📚 Technical Foundation
+
+This codebase is an built on top of Gnosis's Prediction Market AMM, which can be found at: **[https://docs.just.win](https://docs.just.win)**. 
+
+The implementation builds upon the Just Win framework but enables continuous trading, partial resolution, and a fixed liquidity parameter so that potential market maker losses are easy to calculate. 
+
+---
+
+## 📁 Contract Architecture
+
+The core contracts powering Nash's continuous trading AMM:
 
 | Contract                | Description                                                                |
 |-------------------------|----------------------------------------------------------------------------|
-| `ABDKMath64x64.sol`     | Mathematical helper library                                                |
-| `CTHelpers.sol`         | Additional mathematical helper functions                                   |
-| `FakeDai.sol`           | Standard ERC-20 test token used for development                           |
+| `Nash.sol`              | ERC-20 token used for trading (replaces USDC in development)               |
 | `ConditionalTokens.sol` | Manages ERC-1155 outcome tokens and conditional logic                      |
-| `NoBOverround.sol`      | Handles market making operations                                           |
+| `NoBOverround.sol`      | Core AMM engine handling continuous market making operations               |
+| `ABDKMath64x64.sol`     | Mathematical helper library for precise calculations                      |
+| `CTHelpers.sol`         | Additional mathematical helper functions                                   |
 
-> ⚠️ `TestDai.sol` is currently used for testing, but **USDC** will replace it in the final deployment.
-
----
-
-## 🛠️ Network & Tooling
-
-- **Target Deployment Network:** Base  
-- **RPC Provider:** [ThirdWeb RPC](https://thirdweb.com/) is used to execute contract functions and interact with on-chain data.
+> ⚠️ **Note**: `Nash.sol` is used for development testing. **USDC** will be the primary trading token in production.
 
 ---
 
-## 🚧 Development Notes
+## 🛠️ Development Stack
 
-- 🐞 Some **debugging functions** are still present in the code. These will be retained temporarily for development and testing.
-- 🧪 **Test cases** are still in progress and will be submitted before the formal audit.
+- **Target Network:** Base
+- **Development Framework:** Hardhat 3.0 with Viem
+- **Testing:** Comprehensive test suite for continuous trading scenarios
+- **Deployment:** Automated scripts for contract deployment and market setup
 
 ---
 
-Feel free to reach out for access or further information.
+## 🎯 Key Features
+
+### Market Management
+- **Flexible market creation** with customizable parameters
+- **Seamless buy/sell orders** at any time
+
+### User Experience
+- **Seamless buy/sell orders** at any time
+- **Real-time balance updates** and portfolio tracking
+- **Gas-optimized transactions** for efficient trading
+
+---
+
+## 🚧 Development Status
+
+- ✅ **Core AMM Logic**: Implemented and tested
+- ✅ **Continuous Trading**: Fully functional
+- ✅ **Market Setup**: Automated deployment scripts
+- 🧪 **Testing**: Comprehensive test coverage in progress
+- 🔧 **Optimization**: Gas optimization and final refinements
+
+---
+
+## 🔒 Repository Access
+
+This repository is open to all. 
