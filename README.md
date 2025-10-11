@@ -1,6 +1,5 @@
 # 📦 Smart Contract Audit Repo (Public)
 
----
 OpenMarket is the first Open-Source continuous trading prediction market AMM that allows users to buy and sell shares however they'd like until the market expiration date. Unlike other open-source repos that don't allow users to sell shares prior to market conclusion, OpenMarket enables continuous trading throughout the entire market lifecycle. 
 ---
 
@@ -51,24 +50,11 @@ The core contracts powering Nash's continuous trading AMM:
 ### Market Management
 - **Flexible market creation** with customizable parameters
 - **Seamless buy/sell orders** at any time
-
-### User Experience
-- **Seamless buy/sell orders** at any time
-- **Real-time balance updates** and portfolio tracking
-- **Gas-optimized transactions** for efficient trading
-
----
+- **Partial Resolution** market owner can resolve the market at current market prices
 
 ## 🚧 Development Status
 
 - ✅ **Core AMM Logic**: Implemented and tested
 - ✅ **Continuous Trading**: Fully functional
-- ✅ **Market Setup**: Automated deployment scripts
-- 🧪 **Testing**: Comprehensive test coverage in progress
-- 🔧 **Optimization**: Gas optimization and final refinements
+- 🧪 **Audit**: In progress. 
 
----
-
-## 🔒 Repository Access
-
-This repository is open to all. 
