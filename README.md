@@ -16,8 +16,7 @@ OpenMarket is the first Open-Source continuous trading prediction market AMM tha
 
 This codebase is an built on top of Gnosis's Prediction Market AMM, which can be found at: **[https://docs.just.win](https://docs.just.win)**. 
 
-The implementation builds upon the Just Win framework but enables continuous trading, partial resolution, and a fixed liquidity parameter so that potential market maker losses are easy to calculate. 
-
+The implementation builds upon the Just Win framework but enables continuous trading, partial resolution, and a fixed liquidity parameter.
 ---
 
 ## 📁 Contract Architecture
