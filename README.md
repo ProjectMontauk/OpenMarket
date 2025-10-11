@@ -9,6 +9,7 @@ OpenMarket is the first Open-Source continuous trading prediction market AMM tha
 - **📈 AMM-Based**: Uses Automated Market Maker mechanics for price discovery 
 - **⚡ Real-Time Pricing**: Dynamic pricing based on current market sentiment
 - **🎯 Flexible Resolution**: Market owner can resolve the market at current market odds
+- **🛠️ Easy Liquidity**: Market owner only needs to provide market liquidity once during market creation
 
 ---
 
