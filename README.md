@@ -46,8 +46,6 @@ The core contracts powering Nash's continuous trading AMM:
 
 ### Market Management
 - **Flexible market creation** with customizable parameters
-- **Seamless buy/sell orders** at any time
-- **Partial Resolution** market owner can resolve the market at current market prices
 
 ## 🚧 Development Status
 
