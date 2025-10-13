@@ -1,6 +1,6 @@
 # 📦 Smart Contract Audit Repo
 ---
-OpenMarket is the first Open-Source continuous trading prediction market AMM that enables continuous trading until the market expiration date. Unlike other open-source repos, particants can sell buy/sell shares at any time and the market owner can partially resolve the market, enabling the redemption of shares according current market dynamics. 
+OpenMarket is the first Open-Source continuous trading prediction market AMM that enables continuous trading until the market expiration date. Unlike other open-source repos, particants can sell buy/sell shares at any time and the market owner can partially resolve the market, enabling the redemption of shares according to current market dynamics. 
 
 ## 🚀 What Makes OpenMarket Unique
 
