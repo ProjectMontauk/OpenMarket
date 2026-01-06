@@ -2,12 +2,15 @@
 pragma solidity ^0.8.3;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { CTHelpers } from "./CTHelpers.sol";
 
 // Mainnet (ID: 1) canonical address: 0xC59b0e4De5F1248C1140964E0fF287B192407E0C
 // Rinkeby (ID: 4) canonical address: 0x36bede640D19981A82090519bC1626249984c908
 
 contract ConditionalTokens is ERC1155 {
+
+    using SafeERC20 for IERC20;
 
     /// @dev Emitted upon the successful preparation of a condition.
     /// @param conditionId The condition's ID. This ID may be derived from the other three parameters via ``keccak256(abi.encodePacked(oracle, questionId, outcomeSlotCount))``.
@@ -140,7 +143,7 @@ contract ConditionalTokens is ERC1155 {
 
         if (freeIndexSet == 0) {
             if (parentCollectionId == bytes32(0)) {
-                require(collateralToken.transfer(msg.sender, amount), "could not send collateral tokens");
+                collateralToken.safeTransfer(msg.sender, amount);
             } else {
                 _mint(
                     msg.sender,
@@ -199,7 +202,7 @@ contract ConditionalTokens is ERC1155 {
         if (freeIndexSet == 0) {
             // Partitioning the full set of outcomes for the condition in this branch
             if (parentCollectionId == bytes32(0)) {
-                require(collateralToken.transferFrom(msg.sender, address(this), amount), "could not receive collateral tokens");
+                collateralToken.safeTransferFrom(msg.sender, address(this), amount);
             } else {
                 _burn(
                     msg.sender,
@@ -260,7 +263,7 @@ contract ConditionalTokens is ERC1155 {
 
         if (totalPayout > 0) {
             if (parentCollectionId == bytes32(0)) {
-                require(collateralToken.transfer(msg.sender, totalPayout), "could not transfer payout to message sender");
+                collateralToken.safeTransfer(msg.sender, totalPayout);
             } else {
                 _mint(msg.sender, CTHelpers.getPositionId(collateralToken, parentCollectionId), totalPayout, "");
             }
