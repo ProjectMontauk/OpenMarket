@@ -168,7 +168,7 @@ contract LsLMSR is IERC1155Receiver, Ownable{
     require(_betAmount > 0, "Bet amount must be positive");
     require(CT.payoutDenominator(condition) == 0, 'Market already resolved');
 
-    // 1. Transfer the full bet amount from user to LMSR contract
+    // 1. Transfer the full bet amount from user to LMSR contractß
     IERC20(token).safeTransferFrom(msg.sender, address(this), _betAmount);
     
     // 2. Apply overround to the bet amount using the set overround value
