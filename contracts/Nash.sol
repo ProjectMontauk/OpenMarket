@@ -3,7 +3,7 @@ pragma solidity ^0.8.3;
 
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract FakeDai is ERC20 {
+contract Nash is ERC20 {
     constructor() ERC20('Nash', 'NAH') {}
     uint private dummy;
 

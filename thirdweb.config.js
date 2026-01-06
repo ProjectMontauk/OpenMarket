@@ -1,5 +1,5 @@
  // thirdweb.config.js
-module.exports = {
+ module.exports = {
     contractsDir: "contracts",
     outDir: "artifacts",
   // ...other settings

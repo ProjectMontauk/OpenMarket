@@ -80,12 +80,7 @@ async function main() {
       overround             // _overround
     ]);
     
-    console.log("Market setup successful!");
-    console.log("Question ID:", questionId);
-    console.log("Number of outcomes:", numOutcomes);
-    console.log("B input (liquidity):", bInput.toString());
-    console.log("Initial subsidy:", initialSubsidy.toString());
-    console.log("Overround:", overround.toString());
+
     
   } catch (error) {
     console.error("Error setting up market:", error);
