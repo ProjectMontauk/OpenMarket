@@ -4,12 +4,14 @@
 
 ---
 
-## 🚀 What Makes Nash Unique
+## 🚀 What Makes OpenMarket Unique
 
 - **🔄 Continuous Trading**: Buy and sell shares at any time until market expiration
 - **📈 AMM-Based**: Uses Automated Market Maker mechanics for price discovery
 - **⚡ Real-Time Pricing**: Dynamic pricing based on current market sentiment
 - **🎯 Flexible Participation**: No fixed trading windows or rounds
+- **🛠️ Easy Liquidity**: Market owner only needs to provide market liquidity once during market creation, and market maker downside is capped to liquidity provided * ln(2)
+- **🎯 Flexible Resolution**: Market owner can resolve the market at current market odds
 
 ---
 
@@ -23,7 +25,7 @@ The implementation builds upon the Just Win framework but enables continuous tra
 
 ## 📁 Contract Architecture
 
-The core contracts powering Nash's continuous trading AMM:
+The core contracts powering OpenMarket's continuous trading AMM:
 
 | Contract                | Description                                                                |
 |-------------------------|----------------------------------------------------------------------------|
@@ -65,10 +67,11 @@ The core contracts powering Nash's continuous trading AMM:
 - ✅ **Continuous Trading**: Fully functional
 - ✅ **Market Setup**: Automated deployment scripts
 - 🧪 **Testing**: Comprehensive test coverage in progress
+- 🧪 **Audit**: In progress
 - 🔧 **Optimization**: Gas optimization and final refinements
 
 ---
 
 ## 🔒 Repository Access
 
-This repository is open to all. 
+This repository is open to all.
